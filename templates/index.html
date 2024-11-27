@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Main SQL viewer</title>
+    <style>
+        body {
+            background-color: lightgray;
+        }
+    </style>
+</head>
+<body>
+    <h1>Search for a Manga</h1>
+    <form method="POST" action="/search">
+        <label for="manga_name" style="padding: 2px; font-size: 24px;">Manga Name:</label>
+        <input type="text" id="manga_name" name="manga_name" required style="padding: 6px; font-size: 16px; width: 300px;">
+        <button type="submit" style="padding: 6px 20px; font-size: 16px;">Search</button>
+
+    </form>
+    <hr>
+    <h1>All Manga</h1>
+    <form method ="POST" action="/all">
+        <button type="submit" style="padding: 6px 20px; font-size: 16px;">All Manga</button>
+      </a>
+</body>
+</html>

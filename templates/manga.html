@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- Back Button -->
+<br><br>
+<a href="/">
+    <button>Back to Search</button>
+</a>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ manga[1] }}</title>
+    <!--<style>
+        body {
+          margin: 0;
+          padding: 0;
+          background-image: url('{{ image_url }}'); /* Replace with your image URL */
+          background-size: contains; /* Ensures the image covers the entire background */
+          background-position: center; /* Centers the image */
+          background-repeat: no-repeat; /* Prevents tiling */
+        }
+      </style>-->
+</head>
+<br>
+<br>
+<body>
+    {% if image_url %}
+       <img src="{{ image_url }}" alt="Manga Image" />
+    {% else %}
+        <p>No image available.</p>
+    {% endif %}
+    <h1>{{ manga[1] }}</h1>  <!-- Display manga name -->
+    <p><strong>English Name:</strong> {{ manga[2] }}</p>  <!-- Display manga description -->
+    <p><strong>Chapter:</strong> {{ manga[3] }}</p>  <!-- Display manga author -->
+    <p><strong>Status:</strong> {{ manga[4] }}</p>  <!-- Display manga author -->
+</body>
+</html>

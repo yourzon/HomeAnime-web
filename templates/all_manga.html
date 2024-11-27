@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Manga</title>
+    <link rel="stylesheet" href="static/bulma/css/bulma.css">
+</head>
+<body>
+    <!-- Back Button -->
+    <a href="/">
+        <button class="button is-link"> <-- Back to Search</button>
+    </a>
+
+    <!-- Header -->
+    <section class="hero is-primary">
+        <div class="hero-body">
+            <h1 class="title">All Manga</h1>
+        </div>
+    </section>
+
+    <!-- Manga Table -->
+    <section class="section">
+        <div class="container">
+            <table class="table is-striped is-bordered is-hoverable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Status</th>
+                        <th>Name</th>
+                        <th>Chapter</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for manga in manga_list %}
+                    <tr>
+                        <td>{{ manga.id_manga }}</td>
+                        <td>{{ manga.status }}</td>
+                        <td>{{ manga.name }}</td>
+                        <td>{{ manga.chapter }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</body>
+</html>
