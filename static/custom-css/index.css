@@ -1,0 +1,12 @@
+body {
+    background-color: lightgray;
+}
+.container {
+    margin-top: 50px;
+    min-height: 600px;
+}
+hr.custom {
+    border: 4px solid red;
+    border-radius: 5px;
+    box-shadow:2px 2px 0px orange;
+}

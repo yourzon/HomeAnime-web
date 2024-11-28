@@ -1,0 +1,26 @@
+/* manga-card.css */
+.custom-card {
+    width: 300px; /* Match the image width */
+    height: 400px; /* Match the image height */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    border: 1px solid #ddd; /* Optional: Add a border */
+}
+
+.custom-card-content {
+    padding: 10px; /* Adjust padding to fit the content */
+}
+
+.custom-title {
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+}
+
+.custom-image {
+    width: 100%; /* Ensure the image stretches to fit the width */
+    height: 200px; /* Set the height of the image */
+    object-fit: cover; /* Ensures the image covers the area without distortion */
+}

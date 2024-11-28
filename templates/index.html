@@ -3,25 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Main SQL viewer</title>
-    <style>
-        body {
-            background-color: lightgray;
-        }
-    </style>
+    <title>Main SQL Viewer</title>
+    <!-- Link to Bulma CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='bulma/css/bulma.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='custom-css/index.css') }}">
+
 </head>
 <body>
-    <h1>Search for a Manga</h1>
-    <form method="POST" action="/search">
-        <label for="manga_name" style="padding: 2px; font-size: 24px;">Manga Name:</label>
-        <input type="text" id="manga_name" name="manga_name" required style="padding: 6px; font-size: 16px; width: 300px;">
-        <button type="submit" style="padding: 6px 20px; font-size: 16px;">Search</button>
+       <!-- Header -->
+    <section class="hero is-primary">
+        <div class="hero-body">
+            <h1 class="title is-size-1">Main SQL viewer for manga</h1>
+        </div>
+    </section>
 
-    </form>
-    <hr>
-    <h1>All Manga</h1>
-    <form method ="POST" action="/all">
-        <button type="submit" style="padding: 6px 20px; font-size: 16px;">All Manga</button>
-      </a>
+    <div class="container">
+        <!-- Manga Search Form -->
+        <h1 class="title is-3">Search for a Manga</h1>
+        <form method="POST" action="/search">
+            <div class="field">
+                <label for="manga_name" class="label">Manga Name:</label>
+                <div class="control">
+                    <input type="text" id="manga_name" name="manga_name" class="input" required placeholder="Enter manga name" style="width: 300px;">
+                </div>
+            </div>
+            <div class="control">
+                <button type="submit" class="button is-primary">Search</button>
+            </div>
+        </form>
+
+        <hr class="custom">
+
+        <!-- All Manga Button -->
+        <h1 class="title is-3">All Manga</h1>
+        <form method="POST" action="/all">
+            <div class="control">
+                <button type="submit" class="button is-info">Show All Manga</button>
+            </div>
+        </form>
+
+        <br>
+        <hr class="custom">
+
+        <!-- Manga Search Form for editing -->
+        <h1 class="title is-3">Search for a Manga to edit</h1>
+        <form method="POST" action="/edit">
+            <div class="field">
+                <label for="manga_name" class="label">Manga Name:</label>
+                <div class="control">
+                    <input type="text" id="manga_name" name="manga_name" class="input" required placeholder="Enter manga name" style="width: 300px;">
+                </div>
+            </div>
+            <div class="control">
+                <button type="submit" class="button is-warning">Search</button>
+            </div>
+        </form>
+        
+        <br>
+
+    </div>
 </body>
 </html>

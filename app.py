@@ -13,27 +13,36 @@ app.config['MYSQL_PASSWORD'] = 'password'
 app.config['MYSQL_DB'] = 'mangaweb'
 
 mysql = MySQL(app)
+static_image = "/static/images/no_image.png"
 
 #TODO:
-#- Add filtering to the table in all_manga.html (javascript)
-#- Add skin to manga.html and index.html (pure css or bootstrap?)
+#- Add skin to manga.html and index.html (pure css or bootstrap?) more needed
 #- Cleanup backend python
-#- 
+#- add a way to edit SQL entry (later)
+#- add more comment to js and python code
+#- make SQL connexion using os variable
+#- make SQL command more streamline
+#-
 
 def get_image_url(manga_id):
-    # API URL to get the chapter details (images)
+        # API URL to get the chapter details (images)
     url = f"https://api.mangadex.org/manga/{manga_id}"
 
-    # Fetch the data from the MangaDex API
-    response = requests.get(url)
+    try:
+        # Fetch the data from the MangaDex API
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
+    except requests.exceptions.RequestException as e:
+        return static_image
+    
     manga_data = response.json()
-
+    
     for relationship in manga_data['data']['relationships']:
         if relationship['type'] == 'cover_art':
             cover_art_id = relationship['id']
             break
     
-    if cover_art_id:
+    try:
         cover_url = f"https://api.mangadex.org/cover/{cover_art_id}"
         response = requests.get(cover_url)
         cover_response = response.json()
@@ -41,9 +50,12 @@ def get_image_url(manga_id):
         
         base_url = "https://uploads.mangadex.org/covers"
         full_image_url = f"{base_url}/{manga_id}/{file_name}.256.jpg"
-    return full_image_url
-
-
+        
+        proxy_url = url_for('proxy_image', manga_id=manga_id) +f"?image_url={full_image_url}"
+        
+        return proxy_url
+    except requests.exceptions.RequestException as e:
+        return f"Error fetching image: {e}", 500
     
 
 @app.route('/')
@@ -69,23 +81,45 @@ def search_manga():
     MangaRow = namedtuple("MangaRow", columns)
     manga = MangaRow(*row)
 
-    # Use a proxy URL for the image
-    proxy_url = url_for('proxy_image', manga_id=manga.id_manga)
+    image_url = get_image_url(manga.id_manga)
     
     # Render the manga page with the proxy URL
-    return render_template('manga.html', manga=manga, image_url=proxy_url)
+    return render_template('manga.html', manga=manga, image_url=image_url)
+
+
+@app.route('/manga/<manga_id>')
+def manga_details(manga_id):
+    
+    # Fetch manga details by ID from the database
+    cursor = mysql.connection.cursor()
+    cursor.execute("SELECT * FROM manga WHERE id_manga = %s", (manga_id,))
+    row = cursor.fetchone()
+    
+    if not row:
+        cursor.close()
+        return "Manga not found."
+    
+    # Get column names from the cursor
+    columns = [col[0] for col in cursor.description]
+    cursor.close()
+
+    # Create a namedtuple based on the column names and return the data
+    MangaRow = namedtuple("MangaRow", columns)
+    manga = MangaRow(*row)
+    
+    image_url = get_image_url(manga_id)
+    
+    return render_template('manga.html', manga=manga, image_url=image_url)
 
 
 @app.route('/proxy-image/<manga_id>')
 def proxy_image(manga_id):
-    # Logic to fetch the image URL for the given manga ID
-    full_image_url = get_image_url(manga_id)
-    if not full_image_url:
-        return "Image not found.", 404
+    # fetch image_url from url paramater
+    image_url = request.args.get('image_url')
 
     try:
         # Fetch the image from the URL
-        response = requests.get(full_image_url, stream=True)
+        response = requests.get(image_url, stream=True)
         response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
 
         # Serve the image through the proxy
@@ -95,6 +129,7 @@ def proxy_image(manga_id):
         )
     except requests.exceptions.RequestException as e:
         return f"Error fetching image: {e}", 500
+
 
 @app.route('/all', methods=['POST'])
 def show_all_manga():
@@ -110,7 +145,7 @@ def show_all_manga():
     all_manga = [MangaRows(*row) for row in rows]
     
     # Render a template to show all manga
-    return render_template('all_manga.html', manga_list=all_manga)
+    return render_template('all_manga.html', manga_list=all_manga, columns=columns)
 
 if __name__ == '__main__':
     app.run(debug=True)

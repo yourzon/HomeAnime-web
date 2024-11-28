@@ -4,40 +4,53 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>All Manga</title>
-    <link rel="stylesheet" href="static/bulma/css/bulma.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='bulma/css/bulma.css') }}">
+    <script src="{{ url_for('static', filename='js/all-manga.js') }}" defer></script>
+    <style>
+        /* Add some styling for the search input */
+        #searchInput {
+            margin-bottom: 20px;
+            padding: 8px;
+            width: 100%;
+            max-width: 300px;
+        }
+    </style>
 </head>
 <body>
-    <!-- Back Button -->
-    <a href="/">
-        <button class="button is-link"> <-- Back to Search</button>
-    </a>
+
 
     <!-- Header -->
     <section class="hero is-primary">
         <div class="hero-body">
-            <h1 class="title">All Manga</h1>
+            <h1 class="title is-size-1">All Manga</h1>
         </div>
     </section>
+
+    <!-- Back Button -->
+    <button class="button is-link is-outlined" onclick="window.history.back();">
+        <-- Back to previous page
+    </button>
 
     <!-- Manga Table -->
     <section class="section">
         <div class="container">
-            <table class="table is-striped is-bordered is-hoverable">
+            <!-- Search Input -->
+            <input type="text" id="searchInput" placeholder="Search ..." onkeyup="searchTable()">
+
+            <table class="table is-striped is-bordered is-hoverable" id="mangaTable">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Status</th>
-                        <th>Name</th>
-                        <th>Chapter</th>
+                    {% for column in columns %}
+                        {% if column != 'eng_name' %}<th>{{ column }}</th>{% endif %}
+                    {% endfor %}
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="mangaTableBody">
                     {% for manga in manga_list %}
-                    <tr>
-                        <td>{{ manga.id_manga }}</td>
-                        <td>{{ manga.status }}</td>
-                        <td>{{ manga.name }}</td>
-                        <td>{{ manga.chapter }}</td>
+                    <tr onclick="redirectToDetails('{{ manga.id_manga }}')">
+                        {% for key, value in manga._asdict().items() %}
+                            {% if key != 'eng_name'  %}<td>{{ value }}</td>{% endif %}
+                        {% endfor %}
                     </tr>
                     {% endfor %}
                 </tbody>
