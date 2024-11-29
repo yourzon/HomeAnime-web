@@ -27,6 +27,12 @@
                     <input type="text" id="manga_name" name="manga_name" class="input" required placeholder="Enter manga name" style="width: 300px;">
                 </div>
             </div>
+            <!-- Display error message if it exists -->
+            {% if session.get('error_search') %}
+                <div class="error-message" style="color: red;">
+                    {{ session.pop('error_search') }}
+                </div>
+            {% endif %}
             <div class="control">
                 <button type="submit" class="button is-primary">Search</button>
             </div>

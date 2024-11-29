@@ -5,16 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>All Manga</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='bulma/css/bulma.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='custom-css/all_manga.css') }}">
     <script src="{{ url_for('static', filename='js/all-manga.js') }}" defer></script>
-    <style>
-        /* Add some styling for the search input */
-        #searchInput {
-            margin-bottom: 20px;
-            padding: 8px;
-            width: 100%;
-            max-width: 300px;
-        }
-    </style>
+
 </head>
 <body>
 
@@ -35,6 +28,7 @@
     <section class="section">
         <div class="container">
             <!-- Search Input -->
+            <label for="searchInput" class="label">Search for:</label>
             <input type="text" id="searchInput" placeholder="Search ..." onkeyup="searchTable()">
 
             <table class="table is-striped is-bordered is-hoverable" id="mangaTable">
