@@ -3,14 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ manga.name }}</title>
+    <title>{{ manga_info.title }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='bulma/css/bulma.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='custom-css/manga_card.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='custom-css/manga_details.css') }}">
     <script src="{{ url_for('static', filename='js/manga.js') }}" defer></script>
     <style>
-        body {
-            background-color: lightgray;
-        }
+
     </style>
 </head>
 <body>
@@ -22,7 +20,7 @@
     </section>
 
     <!-- Back Button -->
-    <button class="button is-link is-outlined" onclick="window.history.back();">
+    <button class="button is-link is-outlined back-button" onclick="window.history.back();">
         <-- Back to previous page
     </button>
 
@@ -31,24 +29,29 @@
         <div class="container">
             <div class="columns is-vcentered">
                 <div class="column is-narrow">
-                    {% if image_url %}
+                    {% if image_url and 'no-image' not in image_url %}
                         <figure class="image">
                             <img src="{{ image_url }}" alt="Manga Image">
                         </figure>
                     {% else %}
-                        <p class="has-text-danger">No image available.</p>
+                        <figure class="image">
+                            <img src="{{ image_url }}" style="width: 401px; height: 401px;" alt="no-image">
+                        </figure>
                     {% endif %}
                 </div>
                 <div class="column is-narrow">
                     <div class="card custom-card">
                         <div class="card-content">
-                            <h1 class="title is-2">{{ manga.name }}</h1> <!-- Manga name -->
+                            <h1 class="title is-3">{{ manga_info.title }}</h1>
                             <div class="columns is-multiline">
                                 <div class="column is-full">
                                     <div class="content">
-                                    <p><strong>English Name:</strong> {{ manga.eng_name }}</p>
-                                    <p class="chapter"><strong>Chapter:</strong> {{ manga.chapter }}</p>
-                                    <p><strong>Status:</strong> {{ manga.status }}</p>
+                                        <p><strong>English Name:</strong> {{ manga_info.eng_name }}</p>
+                                        <p class="chapter"><strong>Chapter:</strong> {{ manga_info.chapter_read }}</p>
+                                        <p><strong>Status:</strong> {{ manga_info.status_read }}</p>
+                                        <p><strong>Official Status:</strong> {{ manga_info.status_offi }}</p>
+                                        <p><strong>Year Release:</strong> {{ manga_info.year_release }}</p>
+                                        <p><strong>New chapter:</strong> {{ manga_info.is_latest }}</p>                              
                                     </div>
                                 </div>
                             </div>
@@ -58,5 +61,13 @@
             </div>
         </div>
     </section>
+
+    <!-- Footer -->
+    <footer class="footer has-text-centered" style="background-color: #00d1b2; padding-top: 50px; padding-bottom: 50px;">
+        <div class="content">
+            <p>&copy; 2024 Manga Website. All rights reserved.</p>
+        </div>
+    </footer>
+    
 </body>
 </html>

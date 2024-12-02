@@ -7,11 +7,8 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='bulma/css/bulma.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='custom-css/all_manga.css') }}">
     <script src="{{ url_for('static', filename='js/all-manga.js') }}" defer></script>
-
 </head>
 <body>
-
-
     <!-- Header -->
     <section class="hero is-primary">
         <div class="hero-body">
@@ -41,7 +38,7 @@
                 </thead>
                 <tbody id="mangaTableBody">
                     {% for manga in manga_list %}
-                    <tr onclick="redirectToDetails('{{ manga.id_manga }}')">
+                    <tr onclick="redirectToDetails('{{ manga.manga_id }}')">
                         {% for key, value in manga._asdict().items() %}
                             {% if key != 'eng_name'  %}<td>{{ value }}</td>{% endif %}
                         {% endfor %}

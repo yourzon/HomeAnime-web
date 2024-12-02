@@ -23,24 +23,47 @@ function searchTable() {
         }
     }
 }
-function roundChapterColumn() {
-    // Get all rows in the table
-    let rows = document.querySelectorAll("#mangaTable tbody tr");
-    
-    // Loop through each row and round the 'chapter' value (index 2)
+function updateTable(){
+   // Find the header row to dynamically determine column positions
+   const headers = document.querySelectorAll("#mangaTable thead th");
+
+   // Initialize variables for chapter and is_releas columns
+   let chapterIndex = -1;
+   let releaseIndex = -1;
+
+   // Loop through the headers and match them by text content (case-insensitive)
+   headers.forEach((header, index) => {
+       const headerText = header.innerText.trim().toLowerCase();
+       if (headerText === "chapter_read") {
+           chapterIndex = index; // Save the index for the "Chapter" column
+       } else if (headerText === "is_latest") {
+           releaseIndex = index; // Save the index for the "is_latest" column
+       }
+   });
+
+    // Get all rows in the table body
+    const rows = document.querySelectorAll("#mangaTable tbody tr");
     rows.forEach(row => {
-        let chapterCell = row.cells[2];  // Get the cell for the chapter (index 2)
-        let chapterValue = parseFloat(chapterCell.innerText);  // Convert the chapter value to a number
-    // Check if the value has a fractional part
-    if (chapterValue % 1 === 0) {
-        // If it has no fractional part (e.g., 1050.0), convert it to an integer
-        chapterCell.innerText = parseInt(chapterValue);  // Convert to integer
-    } else {
-        // If it has a fractional part (e.g., 1050.5), leave it as a float
-        chapterCell.innerText = chapterValue;  // Keep as float
-    }
-    });
+            // Handle rounding of the dynamic 'chapter' column
+            let chapterCell = row.cells[chapterIndex];
+            let chapterValue = parseFloat(chapterCell.innerText);
+            if (chapterValue % 1 === 0) {
+                chapterCell.innerText = parseInt(chapterValue);
+            } else {
+                chapterCell.innerText = chapterValue;
+            }
+
+            // Handle conversion of the dynamic 'is_releas' column
+            const releaseCell = row.cells[releaseIndex];
+            if (releaseCell.textContent.trim() === '1') {
+                releaseCell.textContent = 'True';
+            } else if (releaseCell.textContent.trim() === '0') {
+                releaseCell.textContent = 'false';
+            }
+        });
 }
+
+
 // Function to handle redirection
 function redirectToDetails(mangaId) {
     // Redirect to the Flask route with the manga ID as a parameter
@@ -48,5 +71,5 @@ function redirectToDetails(mangaId) {
     
 }
 window.onload = function() {
-    roundChapterColumn();  // Round the chapter values when the page loads
+    updateTable();
 }

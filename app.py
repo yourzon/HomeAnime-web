@@ -16,7 +16,7 @@ app.config['MYSQL_DB'] = 'mangaweb'
 app.secret_key = secrets.token_hex(16)
 
 mysql = MySQL(app)
-STATIC_IMAGE = "/static/images/no_image.png"
+STATIC_IMAGE = "/static/images/no-image-full-detail.webp"
 
 #TODO:
 #- Add skin to manga.html and index.html (pure css or bootstrap?) more needed
@@ -27,6 +27,19 @@ STATIC_IMAGE = "/static/images/no_image.png"
 #- make SQL command more streamline - DONE
 #- add if up to date in manga details and search
 #- add new entry in sql and maybe add tags?
+#- redo script using new name sql
+"""
+manga_id (varchar)
+title (varchar)
+eng_name (varchar)
+chapter_read (double)
+status_read (enum)
+status_offi (varchar)
+year_release (int)
+is_latest (true/false)
+tags 
+"""
+
 
 def get_image_url(manga_id):
     """This function get the manga cover from mangadex and
@@ -120,7 +133,7 @@ def index():
 def search_manga_name():
     manga_name = request.form.get('manga_name', '').strip()  # Sanitize input, ensuring it's a non-empty string
     
-    columns,row = sql_command("SELECT * FROM manga WHERE name LIKE %s", ('%' + manga_name + '%',),False)
+    columns,row = sql_command("SELECT * FROM manga WHERE title LIKE %s", ('%' + manga_name + '%',),False)
 
     if not row:
         # Store error in session and redirect to index
@@ -131,16 +144,16 @@ def search_manga_name():
     MangaRow = namedtuple("MangaRow", columns)
     manga = MangaRow(*row)
 
-    image_url = get_image_url(manga.id_manga)
+    image_url = get_image_url(manga.manga_id)
     
     # Render the manga page with the proxy URL
-    return render_template('manga.html', manga=manga, image_url=image_url)
+    return render_template('manga.html', manga_info=manga, image_url=image_url)
 
 
 @app.route('/manga/<manga_id>')
 def manga_details(manga_id):
     # Fetch manga details by ID from the database
-    columns,row = sql_command("SELECT * FROM manga WHERE id_manga = %s", (manga_id,),False)
+    columns,row = sql_command("SELECT * FROM manga WHERE manga_id = %s", (manga_id,),False)
     
     if not row:
         return "Manga not found."
@@ -151,7 +164,7 @@ def manga_details(manga_id):
     
     image_url = get_image_url(manga_id)
     
-    return render_template('manga.html', manga=manga, image_url=image_url)
+    return render_template('manga.html', manga_info=manga, image_url=image_url)
 
 
 @app.route('/proxy-image/<manga_id>')
