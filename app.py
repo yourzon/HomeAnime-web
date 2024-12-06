@@ -8,7 +8,7 @@ from io import BytesIO
 app = Flask(__name__)
 
 # Configure MariaDB connection
-app.config['MYSQL_HOST'] = '127.0.0.1'
+app.config['MYSQL_HOST'] = '127.0.0.1' # os.
 app.config['MYSQL_USER'] = 'test'
 app.config['MYSQL_PASSWORD'] = 'password'
 app.config['MYSQL_DB'] = 'mangaweb'
@@ -26,8 +26,8 @@ STATIC_IMAGE = "/static/images/no-image-full-detail.webp"
 #- make SQL connexion using os variable (app.config)
 #- make SQL command more streamline - DONE
 #- add if up to date in manga details and search
-#- add new entry in sql and maybe add tags?
-#- redo script using new name sql
+#- add new entry in sql and maybe add tags? - LATER
+#- redo script using new name sql - DONE
 """
 manga_id (varchar)
 title (varchar)
