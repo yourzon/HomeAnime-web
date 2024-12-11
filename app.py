@@ -20,12 +20,11 @@ STATIC_IMAGE = "/static/images/no-image-full-detail.webp"
 
 #TODO:
 #- Add skin to manga.html and index.html (pure css or bootstrap?) more needed - DONE
-#- Cleanup backend python
-#- add a way to edit SQL entry - LATER
+#- Cleanup backend python (chatgpt)
 #- add more comment to js and python code
 #- make SQL connexion using os variable (app.config) - DONE
 #- make SQL command more streamline - DONE
-#- add if up to date in manga details and search
+#- add if up to date in manga details and search - 
 #- add new entry in sql and maybe add tags? - LATER
 #- redo script using new name sql - DONE
 """
@@ -191,7 +190,6 @@ def proxy_image(manga_id):
         )
     except requests.exceptions.RequestException as e:
         return f"Error fetching image: {e}", 500
-
 
 @app.route('/all', methods=['POST'])
 def show_all_manga():

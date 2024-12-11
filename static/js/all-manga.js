@@ -1,26 +1,27 @@
 // Function to filter table rows based on the search input
 function searchTable() {
-    let input = document.getElementById('searchInput'); // Get search input element
-    let filter = input.value.toLowerCase(); // Convert input to lowercase for case-insensitive comparison
-    let table = document.getElementById('mangaTable'); // Get the table
-    let rows = table.getElementsByTagName('tr'); // Get all table rows
+    const input = document.getElementById('searchInput'); // Cache search input element
+    const filter = input.value.toLowerCase(); // Convert input to lowercase for case-insensitive comparison
+    const table = document.getElementById('mangaTable'); // Cache the table element
+    const rows = table.getElementsByTagName('tr'); // Cache all table rows
 
     // Loop through all table rows (skip the first row as it is the header)
     for (let i = 1; i < rows.length; i++) {
-        let cells = rows[i].getElementsByTagName('td');
-        let rowText = '';
+        const cells = rows[i].getElementsByTagName('td');
+        let rowTextFound = false;
 
         // Loop through each cell in the row
         for (let j = 0; j < cells.length; j++) {
-            rowText += cells[j].textContent.toLowerCase(); // Concatenate the cell text
+            const cellText = cells[j].textContent.toLowerCase();
+            // Check if the cell contains the filter text
+            if (cellText.includes(filter)) {
+                rowTextFound = true;
+                break; // No need to check further cells
+            }
         }
 
-        // If the row text contains the filter value, display the row; otherwise, hide it
-        if (rowText.includes(filter)) {
-            rows[i].style.display = '';
-        } else {
-            rows[i].style.display = 'none';
-        }
+        // Show or hide the row based on whether a match was found
+        rows[i].style.display = rowTextFound ? '' : 'none';
     }
 }
 // Function to update table changes for visual
