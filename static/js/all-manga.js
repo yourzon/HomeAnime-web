@@ -23,6 +23,7 @@ function searchTable() {
         }
     }
 }
+// Function to update table changes for visual
 function updateTable(){
    // Find the header row to dynamically determine column positions
    const headers = document.querySelectorAll("#mangaTable thead th");
@@ -34,13 +35,13 @@ function updateTable(){
    // Loop through the headers and match them by text content (case-insensitive)
    headers.forEach((header, index) => {
        const headerText = header.innerText.trim().toLowerCase();
-       if (headerText === "chapter_read") {
+       if (headerText === "chapter read") {
            chapterIndex = index; // Save the index for the "Chapter" column
-       } else if (headerText === "is_latest") {
+       } else if (headerText === "up to date") {
            releaseIndex = index; // Save the index for the "is_latest" column
        }
    });
-
+   
     // Get all rows in the table body
     const rows = document.querySelectorAll("#mangaTable tbody tr");
     rows.forEach(row => {
@@ -62,8 +63,6 @@ function updateTable(){
             }
         });
 }
-
-
 // Function to handle redirection
 function redirectToDetails(mangaId) {
     // Redirect to the Flask route with the manga ID as a parameter

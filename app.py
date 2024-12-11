@@ -8,10 +8,10 @@ from io import BytesIO
 app = Flask(__name__)
 
 # Configure MariaDB connection
-app.config['MYSQL_HOST'] = '127.0.0.1' # os.
-app.config['MYSQL_USER'] = 'test'
-app.config['MYSQL_PASSWORD'] = 'password'
-app.config['MYSQL_DB'] = 'mangaweb'
+app.config['MYSQL_HOST'] = '127.0.0.1' #os.getenv('DB_HOST')
+app.config['MYSQL_USER'] = 'test' #os.getenv('DB_USERNAME')
+app.config['MYSQL_PASSWORD'] = 'password' #os.getenv('DB_PASSWORD')
+app.config['MYSQL_DB'] = 'mangaweb' #os.getenv('DB_DATABASE')
 
 app.secret_key = secrets.token_hex(16)
 
@@ -19,11 +19,11 @@ mysql = MySQL(app)
 STATIC_IMAGE = "/static/images/no-image-full-detail.webp"
 
 #TODO:
-#- Add skin to manga.html and index.html (pure css or bootstrap?) more needed
+#- Add skin to manga.html and index.html (pure css or bootstrap?) more needed - DONE
 #- Cleanup backend python
-#- add a way to edit SQL entry (later)
+#- add a way to edit SQL entry - LATER
 #- add more comment to js and python code
-#- make SQL connexion using os variable (app.config)
+#- make SQL connexion using os variable (app.config) - DONE
 #- make SQL command more streamline - DONE
 #- add if up to date in manga details and search
 #- add new entry in sql and maybe add tags? - LATER
@@ -146,8 +146,15 @@ def search_manga_name():
 
     image_url = get_image_url(manga.manga_id)
     
+    # Get all tags names base of manga id
+    tags = sql_command("SELECT t.Name FROM tags t JOIN manga_tags mt ON t.tag_id = mt.tag_id WHERE mt.manga_id = %s ;",(manga.manga_id,))
+ 
+    # convert tuples of touples to a string with all tags
+    names = [tag[0] for tag in tags[1]]
+    genres = ", ".join(names)
+    
     # Render the manga page with the proxy URL
-    return render_template('manga.html', manga_info=manga, image_url=image_url)
+    return render_template('manga.html', manga_info=manga, image_url=image_url, tags=genres)
 
 
 @app.route('/manga/<manga_id>')

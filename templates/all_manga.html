@@ -31,16 +31,29 @@
             <table class="table is-striped is-bordered is-hoverable" id="mangaTable">
                 <thead>
                     <tr>
-                    {% for column in columns %}
-                        {% if column != 'eng_name' %}<th>{{ column }}</th>{% endif %}
-                    {% endfor %}
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Chapter Read</th>
+                    <th>Status Read</th>
+                    <th>Official Status</th>
+                    <th>Year of Release</th>
+                    <th>Up to date</th>
                     </tr>
                 </thead>
                 <tbody id="mangaTableBody">
                     {% for manga in manga_list %}
-                    <tr onclick="redirectToDetails('{{ manga.manga_id }}')">
+                    <!--<tr onclick="redirectToDetails('{{ manga.manga_id }}')">-->
                         {% for key, value in manga._asdict().items() %}
-                            {% if key != 'eng_name'  %}<td>{{ value }}</td>{% endif %}
+                            {% if key != 'eng_name'  %}
+                            <td
+                                {% if key == 'manga_id' or key == 'title' %}
+                                  class="clickable" 
+                                  onclick="redirectToDetails('{{ manga.manga_id }}')"
+                                {% endif %}
+                                >
+                                {{ value }}
+                            </td>
+                            {% endif %}
                         {% endfor %}
                     </tr>
                     {% endfor %}

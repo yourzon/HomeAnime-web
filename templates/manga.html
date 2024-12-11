@@ -51,7 +51,15 @@
                                         <p><strong>Status:</strong> {{ manga_info.status_read }}</p>
                                         <p><strong>Official Status:</strong> {{ manga_info.status_offi }}</p>
                                         <p><strong>Year Release:</strong> {{ manga_info.year_release }}</p>
-                                        <p><strong>New chapter:</strong> {{ manga_info.is_latest }}</p>                              
+                                        <!-- if true print with url if not print false-->
+                                        {% if manga_info.is_latest == 1 %}
+                                            <p><strong>New chapter:</strong> <a href="https:/mangadex.org/title/{{ manga_info.manga_id }}" target="_blank">True</a></p>
+                                        {% else %}
+                                            <p><strong>New chapter:</strong>False</p>
+                                        {% endif %}
+                                        <p><strong>Genres</strong> 
+                                            {{ tags }}
+                                        </p>                    
                                     </div>
                                 </div>
                             </div>
