@@ -67,8 +67,7 @@ function updateTable(){
 // Function to handle redirection
 function redirectToDetails(mangaId) {
     // Redirect to the Flask route with the manga ID as a parameter
-    window.location.href = `/manga/${mangaId}`;
-    
+    window.location.href = `/manga/${mangaId}`; 
 }
 window.onload = function() {
     updateTable();

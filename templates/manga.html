@@ -29,15 +29,9 @@
         <div class="container">
             <div class="columns is-vcentered">
                 <div class="column is-narrow">
-                    {% if image_url and 'no-image' not in image_url %}
                         <figure class="image">
-                            <img src="{{ image_url }}" alt="Manga Image">
-                        </figure>
-                    {% else %}
-                        <figure class="image">
-                            <img src="{{ image_url }}" style="width: 401px; height: 401px;" alt="no-image">
-                        </figure>
-                    {% endif %}
+                            <img src="/proxy-image/{{ manga_info.manga_id}}"  alt="Manga Image">
+                        </figure>                    
                 </div>
                 <div class="column is-narrow">
                     <div class="card custom-card">
@@ -57,7 +51,7 @@
                                         {% else %}
                                             <p><strong>New chapter:</strong>False</p>
                                         {% endif %}
-                                        <p><strong>Genres</strong> {{ tags }}</p>                    
+                                        <p><strong>Genres:</strong> {{ tags }}</p>                    
                                     </div>
                                 </div>
                             </div>

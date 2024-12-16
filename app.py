@@ -1,23 +1,18 @@
-from flask import Flask, render_template, request, send_file, url_for, redirect, session
+from flask import Flask, render_template, request, send_file, url_for, redirect, session, send_from_directory
 from flask_mysqldb import MySQL
 import requests
-import secrets
 from collections import namedtuple
 from io import BytesIO
+import os
+from config import TestingConfig
 
 app = Flask(__name__)
 
-# Configure MariaDB connection
-app.config['MYSQL_HOST'] = '127.0.0.1' #os.getenv('DB_HOST')
-app.config['MYSQL_USER'] = 'test' #os.getenv('DB_USERNAME')
-app.config['MYSQL_PASSWORD'] = 'password' #os.getenv('DB_PASSWORD')
-app.config['MYSQL_DB'] = 'mangaweb' #os.getenv('DB_DATABASE')
-
-app.secret_key = secrets.token_hex(16)
+app.config.from_object(TestingConfig)
 
 mysql = MySQL(app)
-STATIC_IMAGE = "/static/images/no-image-full-detail.webp"
-
+STATIC_IMAGE_PATH = "static/images/no-image-401x401.webp"
+STATIC_IMAGE_MIME = 'image/webp'
 #TODO:
 #- Add skin to manga.html and index.html (pure css or bootstrap?) more needed - DONE
 #- Cleanup backend python (chatgpt)
@@ -38,52 +33,6 @@ year_release (int)
 is_latest (true/false)
 tags 
 """
-
-
-def get_image_url(manga_id):
-    """This function get the manga cover from mangadex and
-    host the image trought a local proxy or send static image.
-
-    Args:
-        manga_id (str): the unique UUID of the manga wanted
-
-    Returns:
-        str: The proxied URL or a static fallback image URL.
-    """
-    # API URL to get the chapter details (images)
-    url = f"https://api.mangadex.org/manga/{manga_id}?includes[]=cover_art"
-
-    try:
-        # Fetch the data from the MangaDex API
-        response = requests.get(url)
-        response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
-    except requests.exceptions.RequestException as e:
-        return STATIC_IMAGE
-    
-    manga_data = response.json()
-    # Extract cover_art relationship using next()
-    cover_relationship = next(
-        (rel for rel in manga_data.get("data", {}).get("relationships", []) 
-         if rel.get("type") == "cover_art"),
-        None
-    )
-   
-    # Fallback if no cover_art is found
-    if not cover_relationship or "attributes" not in cover_relationship:
-        return STATIC_IMAGE
-
-    cover_filename = cover_relationship["attributes"].get("fileName")
-    if not cover_filename:
-        return STATIC_IMAGE
-   
-    # Create URL to get the image from managdex server
-    base_url = "https://uploads.mangadex.org/covers"
-    full_image_url = f"{base_url}/{manga_id}/{cover_filename}.256.jpg"
-    
-    proxy_url = url_for('proxy_image', manga_id=manga_id) +f"?image_url={full_image_url}"
-    
-    return proxy_url
-    
 
 def sql_command(query,params=None,fetch_all=True):
     """
@@ -128,80 +77,195 @@ def sql_command(query,params=None,fetch_all=True):
 def index():
     return render_template('index.html')
 
-@app.route('/search', methods=['POST'])
-def search_manga_name():
-    manga_name = request.form.get('manga_name', '').strip()  # Sanitize input, ensuring it's a non-empty string
-    
-    columns,row = sql_command("SELECT * FROM manga WHERE title LIKE %s", ('%' + manga_name + '%',),False)
+@app.route('/manga', methods=['POST'])
+@app.route('/manga/<manga_id>', methods=['GET'])
+def manga_handler(manga_id=None):
+    """
+    Handles the retrieval and display of manga details, including search by title and 
+    fetching manga details by manga ID.
 
-    if not row:
-        # Store error in session and redirect to index
-        session['error_search'] = f"Manga '{manga_name}' not found."
-        return redirect(url_for('index'))
+    This function supports two routes:
+    - A POST request to `/manga` allows users to search for manga by its title. 
+    - A GET request to `/manga/<manga_id>` retrieves details of a specific manga by its unique ID.
+
+    In the case of a POST request, the manga name entered in the form is used to search for matching 
+    titles in the database. If no results are found, an error message is stored in the session and 
+    the user is redirected to the index page.
+
+    For a GET request with a valid manga ID, the function retrieves the manga's details from the database.
+    If no manga with the provided ID is found, a 404 error page is rendered with a message indicating 
+    that the manga was not found.
+
+    The manga details are retrieved from the database, including the manga title, description, and associated tags.
+    The tags are formatted and passed to the `manga.html` template for display.
+
+    Args:
+        manga_id (str, optional): The unique ID of the manga. If not provided, the function expects
+                                   a POST request to search for manga by title.
+
+    Returns:
+        flask.render_template: The rendered `manga.html` template displaying the manga's details,
+                               or a 404 page if the manga is not found, or a redirect in case of an invalid search.
+    """
+    if request.method == 'POST':
+        # Handle search by manga name
+        manga_name = request.form.get('manga_name', '').strip()  # Sanitize input
+
+        columns, row = sql_command("SELECT * FROM manga WHERE title LIKE %s", ('%' + manga_name + '%',), False)
+
+        if not row:
+            # Store error in session and redirect to index
+            session['error_search'] = f"Manga '{manga_name}' not found."
+            return redirect(url_for('index'))
+
+    elif request.method == 'GET':
+        # Handle fetching details by manga ID from URL
+        if not manga_id:
+            return "Manga ID is required.", 400
+
+        columns, row = sql_command("SELECT * FROM manga WHERE manga_id = %s", (manga_id,), False)
+
+        if not row:
+            return render_template('404.html', message=f'Manga with ID {manga_id} not found.'), 404
 
     # Create a namedtuple based on the column names
     MangaRow = namedtuple("MangaRow", columns)
     manga = MangaRow(*row)
 
-    image_url = get_image_url(manga.manga_id)
-    
-    # Get all tags names base of manga id
-    tags = sql_command("SELECT t.Name FROM tags t JOIN manga_tags mt ON t.tag_id = mt.tag_id WHERE mt.manga_id = %s ;",(manga.manga_id,))
- 
-    # convert tuples of touples to a string with all tags
+    # Fetch the image URL
+    # image_url = get_image_url(manga.manga_id)
+
+    # Fetch tags associated with the manga
+    tags = sql_command(
+        "SELECT t.Name FROM tags t JOIN manga_tags mt ON t.tag_id = mt.tag_id WHERE mt.manga_id = %s;",
+        (manga.manga_id,)
+    )
+
+    # Convert tuples of tags to a string
     names = [tag[0] for tag in tags[1]]
     genres = ", ".join(names)
-    
-    # Render the manga page with the proxy URL
-    return render_template('manga.html', manga_info=manga, image_url=image_url, tags=genres)
 
+    # Render the manga page
+    return render_template('manga.html', manga_info=manga, tags=genres)
 
-@app.route('/manga/<manga_id>')
-def manga_details(manga_id):
-    # Fetch manga details by ID from the database
-    columns,row = sql_command("SELECT * FROM manga WHERE manga_id = %s", (manga_id,),False)
-    
-    if not row:
-        return "Manga not found."
+@app.route('/all', methods=['POST'])
+def show_all_manga():
+    """
+    Fetches all manga records from the database and renders a template to display them.
+
+    This function queries the database to retrieve all records from the `manga` table.
+    The column names are used to create a namedtuple for each row, making it easier
+    to access the data in a structured way. Then, the function passes the manga data
+    and column names to the `all_manga.html` template for rendering.
+
+    It is accessible via a POST request to the `/all` route.
+
+    Returns:
+        flask.render_template: The rendered HTML template displaying all manga data.
+    """
+    columns,rows = sql_command("SELECT * FROM manga")
     
     # Create a namedtuple based on the column names and return the data
-    MangaRow = namedtuple("MangaRow", columns)
-    manga = MangaRow(*row)
-    
-    image_url = get_image_url(manga_id)
-    
-    return render_template('manga.html', manga_info=manga, image_url=image_url)
-
+    MangaRows = namedtuple("MangaRow", columns)
+    #all_manga = [MangaRows(*row) for row in rows]
+    all_manga = []
+    for row in rows:
+        #print(row[0])
+        manga = MangaRows(*row)
+        
+        # Fetch tags associated with the manga
+        tags = sql_command(
+            "SELECT t.Name FROM tags t JOIN manga_tags mt ON t.tag_id = mt.tag_id WHERE mt.manga_id = %s;",
+            (row[0],)
+        )
+        # Extract tags from the result
+        manga_tags = [tag[0] for tag in tags[1]] # Extract tag names
+        genres = ", ".join(manga_tags)
+        
+        print(manga_tags)
+        # Combine manga fields and tags into a new namedtuple
+        MangaWithTags = namedtuple("MangaWithTags", tuple(columns) + ("tags",))  # Add "tags" to the fields
+        manga_with_tags = MangaWithTags(*row, genres)  # Create new namedtuple with tags
+        
+        all_manga.append(manga_with_tags)
+        
+    # Render a template to show all manga
+    return render_template('all_manga.html', manga_list=all_manga, columns=columns)
 
 @app.route('/proxy-image/<manga_id>')
 def proxy_image(manga_id):
-    # fetch image_url from url paramater
-    image_url = request.args.get('image_url')
+    """
+    Fetches and serves the manga cover image from MangaDex, or a static fallback image
+    if the cover image is not available, the MangaDex API call fails, or if any error occurs.
+    
+    This function first attempts to retrieve the manga cover image from the MangaDex API.
+    If the cover image is not found or if there are any issues (e.g., no internet connection,
+    missing cover art, etc.), it serves a static fallback image.
+
+    Args:
+        manga_id (str): The unique ID of the manga whose cover image is to be fetched.
+
+    Returns:
+        Flask Response: The cover image if found, or a fallback static image if an error occurs.
+        The response will have the appropriate content type (e.g., image/jpeg or image/webp).
+    """
+    # API URL to get the manga cover art
+    url = f"https://api.mangadex.org/manga/{manga_id}?includes[]=cover_art"
+
+    try:
+        # Fetch the data from the MangaDex API
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
+        manga_data = response.json()
+    except requests.exceptions.RequestException:
+        return send_file(
+            os.path.join(app.root_path, STATIC_IMAGE_PATH),  # Static fallback image
+            mimetype=STATIC_IMAGE_MIME
+        )
+    
+    # Extract the cover relationship
+    relationships = manga_data.get("data", {}).get("relationships", [])
+    cover_relationship = next(
+        (rel for rel in relationships if rel.get("type") == "cover_art"), 
+        None
+    )
+
+    # If no cover art found, return the static fallback
+    if not cover_relationship:
+        return send_file(
+            os.path.join(app.root_path, STATIC_IMAGE_PATH),  # Static fallback image
+            mimetype=STATIC_IMAGE_MIME
+        )
+
+    cover_filename = cover_relationship.get("attributes", {}).get("fileName")
+    
+    if not cover_filename:
+        return send_file(
+            os.path.join(app.root_path, STATIC_IMAGE_PATH),  # Static fallback image
+            mimetype=STATIC_IMAGE_MIME
+        )
+
+    # Construct the URL for the cover image
+    base_url = "https://uploads.mangadex.org/covers"
+    full_image_url = f"{base_url}/{manga_id}/{cover_filename}.256.jpg"
 
     try:
         # Fetch the image from the URL
-        response = requests.get(image_url, stream=True)
+        response = requests.get(full_image_url, stream=True)
         response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
 
         # Serve the image through the proxy
         return send_file(
             BytesIO(response.content),
-            mimetype=response.headers.get('Content-Type', 'image/jpeg')  # Default to JPEG
+            mimetype=response.headers.get('Content-Type', 'image/jpeg')  # Default to JPEG if type is not available
         )
-    except requests.exceptions.RequestException as e:
-        return f"Error fetching image: {e}", 500
+    except requests.exceptions.RequestException:
+        # If image fetch fails, return the static fallback
+        return send_file(
+            os.path.join(app.root_path, STATIC_IMAGE_PATH),  # Static fallback image
+            mimetype=STATIC_IMAGE_MIME
+        )
 
-@app.route('/all', methods=['POST'])
-def show_all_manga():
-    
-    columns,rows = sql_command("SELECT * FROM manga")
-    
-    # Create a namedtuple based on the column names and return the data
-    MangaRows = namedtuple("MangaRow", columns)
-    all_manga = [MangaRows(*row) for row in rows]
-    
-    # Render a template to show all manga
-    return render_template('all_manga.html', manga_list=all_manga, columns=columns)
 
 if __name__ == '__main__':
     app.run(debug=True)
