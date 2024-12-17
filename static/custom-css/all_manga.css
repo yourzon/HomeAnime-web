@@ -5,3 +5,10 @@
     width: 100%;
     max-width: 300px;
 }
+
+.section {
+    margin: 25px;
+    padding: 2rem;
+    display: flex;
+    flex-wrap: wrap;
+}

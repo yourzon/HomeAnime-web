@@ -15,24 +15,15 @@ STATIC_IMAGE_PATH = "static/images/no-image-401x401.webp"
 STATIC_IMAGE_MIME = 'image/webp'
 #TODO:
 #- Add skin to manga.html and index.html (pure css or bootstrap?) more needed - DONE
-#- Cleanup backend python (chatgpt)
+#- Cleanup backend python (chatgpt) - DONE
 #- add more comment to js and python code
 #- make SQL connexion using os variable (app.config) - DONE
 #- make SQL command more streamline - DONE
 #- add if up to date in manga details and search - 
 #- add new entry in sql and maybe add tags? - LATER
 #- redo script using new name sql - DONE
-"""
-manga_id (varchar)
-title (varchar)
-eng_name (varchar)
-chapter_read (double)
-status_read (enum)
-status_offi (varchar)
-year_release (int)
-is_latest (true/false)
-tags 
-"""
+#- Convert code to production
+
 
 def sql_command(query,params=None,fetch_all=True):
     """
@@ -45,7 +36,6 @@ def sql_command(query,params=None,fetch_all=True):
 
     Returns:
         tuple: For SELECT queries, returns a tuple (columns, result).
-        int: For non-SELECT queries, returns the number of affected rows.
     """
     try:
         with mysql.connection.cursor() as cur:
@@ -64,9 +54,6 @@ def sql_command(query,params=None,fetch_all=True):
                     result = cur.fetchone()  # Fetch only the first row
                 return columns, result
             
-            # For INSERT, UPDATE, DELETE, etc., commit changes and return the number of rows affected
-            mysql.connection.commit()
-            return cur.rowcount
     
     except Exception as e:
         # Log error message for better debugging (you can use a logger here)
@@ -151,38 +138,34 @@ def manga_handler(manga_id=None):
 @app.route('/all', methods=['POST'])
 def show_all_manga():
     """
-    Fetches all manga records from the database and renders a template to display them.
+    Fetches all manga records from the database along with their associated tags
+    and renders a template to display them.
 
     This function queries the database to retrieve all records from the `manga` table.
-    The column names are used to create a namedtuple for each row, making it easier
-    to access the data in a structured way. Then, the function passes the manga data
-    and column names to the `all_manga.html` template for rendering.
+    For each manga record, it also fetches associated tags from the `tags` table and
+    joins them into a single string of tag names. It then combines the manga data and tags
+    into a new namedtuple. The function passes the combined data (manga records and tags)
+    to the `all_manga.html` template for rendering.
 
-    It is accessible via a POST request to the `/all` route.
+    The function is accessible via a POST request to the `/all` route.
 
     Returns:
-        flask.render_template: The rendered HTML template displaying all manga data.
+        flask.render_template: The rendered HTML template displaying all manga records
+        with their associated tags.
     """
     columns,rows = sql_command("SELECT * FROM manga")
-    
-    # Create a namedtuple based on the column names and return the data
-    MangaRows = namedtuple("MangaRow", columns)
-    #all_manga = [MangaRows(*row) for row in rows]
     all_manga = []
+    
     for row in rows:
-        #print(row[0])
-        manga = MangaRows(*row)
-        
-        # Fetch tags associated with the manga
+        # Fetch tags associated with the manga_id that is in row[0]
         tags = sql_command(
             "SELECT t.Name FROM tags t JOIN manga_tags mt ON t.tag_id = mt.tag_id WHERE mt.manga_id = %s;",
             (row[0],)
         )
         # Extract tags from the result
-        manga_tags = [tag[0] for tag in tags[1]] # Extract tag names
+        manga_tags = [tag[0] for tag in tags[1]]
         genres = ", ".join(manga_tags)
         
-        print(manga_tags)
         # Combine manga fields and tags into a new namedtuple
         MangaWithTags = namedtuple("MangaWithTags", tuple(columns) + ("tags",))  # Add "tags" to the fields
         manga_with_tags = MangaWithTags(*row, genres)  # Create new namedtuple with tags
