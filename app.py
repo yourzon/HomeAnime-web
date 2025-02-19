@@ -16,12 +16,15 @@ STATIC_IMAGE_MIME = 'image/webp'
 #TODO:
 #- Add skin to manga.html and index.html (pure css or bootstrap?) more needed - DONE
 #- Cleanup backend python (chatgpt) - DONE
-#- add more comment to js and python code
 #- make SQL connexion using os variable (app.config) - DONE
 #- make SQL command more streamline - DONE
+#- redo script using new name sql - 
+
 #- add if up to date in manga details and search - 
 #- add new entry in sql and maybe add tags? - LATER
-#- redo script using new name sql - DONE
+#- add more comment to js and python code
+#- add statistique page
+#- add remove entry code
 #- Convert code to production
 
 
