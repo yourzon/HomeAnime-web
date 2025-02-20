@@ -7,7 +7,6 @@
     <!-- Link to Bulma CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='bulma/css/bulma.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='custom-css/index.css') }}">
-
 </head>
 <body>
        <!-- Header -->
@@ -48,6 +47,53 @@
         <br>
         <hr class="custom">
         <br>
+         <!-- Delete Manga Button -->
+         <h1 class="title is-3">Delete Manga</h1>
+         <form method="POST" action="/">
+            <div class="field is-horizontal">
+                <div class="control is-expanded">
+                    <input type="text" id="manga_id" name="manga_id" class="input" required placeholder="Enter manga ID"
+                           style="width: 300px;" value="{{ request.form['manga_id'] if 'manga_id' in request.form else '' }}">
+                </div>
+                <!-- Buttons beside the input field -->
+                <div class="control is-grouped" style="margin-left: 10px;">
+                    <button type="submit" class="button is-danger">
+                        {% if session['pending_delete'] %}
+                            Confirm Delete
+                            <input type="hidden" name="confirm" value="yes">
+                            <input type="hidden" name="manga_id" value="{{ session['pending_delete'] }}">
+                        {% else %}
+                            Delete
+                        {% endif %}
+                    </button>
+        
+                    <!-- Same form action for the cancel button -->
+                    <button type="button" class="button is-warning" onclick="clearInputAndRedirect()">Cancel</button>
+                </div>
+            </div>
+        </form>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <p style="color: {% if category == 'warning' %}yellow{% endif %};">
+                        {{ message }}
+                    </p>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+         <br>
+         <hr class="custom">
+         <br>
+        <!-- Statistiques Button -->
+        <h1 class="title is-3">Statistiques</h1>
+        <form method="POST" action="/Statistiques">
+            <div class="control">
+                <button type="submit" class="button is-info">Statistiques</button>
+            </div>
+        </form>
+        <br>
+        <hr class="custom">
+        <br>
     </div>
     <!-- Footer -->
     <footer class="custom-footer">
@@ -55,3 +101,10 @@
     </footer>
 </body>
 </html>
+
+<script>
+    function clearInputAndRedirect() {
+        document.getElementById("manga_id").value = ""; // Clear the input field
+        window.location.href = "/"; // Redirect to homepage
+    }
+</script>

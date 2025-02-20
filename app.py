@@ -1,10 +1,11 @@
-from flask import Flask, render_template, request, send_file, url_for, redirect, session, send_from_directory
+from flask import Flask, render_template, request, send_file, url_for, redirect, session, flash
 from flask_mysqldb import MySQL
 import requests
 from collections import namedtuple
 from io import BytesIO
 import os
 from config import TestingConfig
+from mylib import *
 
 app = Flask(__name__)
 
@@ -18,15 +19,19 @@ STATIC_IMAGE_MIME = 'image/webp'
 #- Cleanup backend python (chatgpt) - DONE
 #- make SQL connexion using os variable (app.config) - DONE
 #- make SQL command more streamline - DONE
-#- redo script using new name sql - 
 
+#- redo script using new name sql - 
 #- add if up to date in manga details and search - 
 #- add new entry in sql and maybe add tags? - LATER
 #- add more comment to js and python code
 #- add statistique page
 #- add remove entry code
+#- refactor with manga class like the scripts
+#- refactor with sql class
 #- Convert code to production
 
+#TODO
+db = MariaDBConnection(mysql)
 
 def sql_command(query,params=None,fetch_all=True):
     """
@@ -63,8 +68,9 @@ def sql_command(query,params=None,fetch_all=True):
         print(f"SQL Command Error: {e}")
         return None
 
-@app.route('/')
+@app.route('/',methods=['GET'])
 def index():
+    session.clear()
     return render_template('index.html')
 
 @app.route('/manga', methods=['POST'])
@@ -121,9 +127,6 @@ def manga_handler(manga_id=None):
     # Create a namedtuple based on the column names
     MangaRow = namedtuple("MangaRow", columns)
     manga = MangaRow(*row)
-
-    # Fetch the image URL
-    # image_url = get_image_url(manga.manga_id)
 
     # Fetch tags associated with the manga
     tags = sql_command(
@@ -252,6 +255,39 @@ def proxy_image(manga_id):
             mimetype=STATIC_IMAGE_MIME
         )
 
+@app.route('/',methods=['POST'])
+def delete_manga():
+    manga_id = request.form.get('manga_id', '').strip()  # Get manga ID from the form
+    
+    if request.method == 'POST' and 'confirm' in request.form:  # Step 2: User confirmed deletion
+        # Delete the manga from DB
+        sql_command("DELETE FROM manga WHERE manga_id = %s", (manga_id,), False)
+        flash("Manga deleted successfully!", "success")
+        session.pop('pending_delete', None)  # Clear the pending delete session data
+        return redirect(url_for('delete_manga'))  # Redirect to clear the form data and flash message
+    
+    # Step 1: Fetch manga details and ask for confirmation
+    columns, row = sql_command("SELECT * FROM manga WHERE manga_id = %s", (manga_id,), False)
+    if row:
+        MangaRow = namedtuple("MangaRow", columns)
+        manga = MangaRow(*row)
+        session['pending_delete'] = manga_id  # Store manga ID for confirmation
+        flash(f"Are you sure you want to delete: {manga.manga_id}, {manga.title}, {manga.eng_name}?", "warning")
+    else:
+        flash("Manga not found!", "danger")
+
+    return render_template("index.html")  # Stay on the same page
+
+#TODO
+@app.route('/statistiques',methods=['GET'])
+def get_stats():
+    #TODO
+    #-quantity of manga by read stat
+    #-number of manga
+    #-average of chapter read by manag
+    #-the number of is_lastest 
+    #-the number of manga by year of release(button toggle)
+    print("")
 
 if __name__ == '__main__':
     app.run(debug=True)

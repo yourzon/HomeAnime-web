@@ -6,8 +6,10 @@ html{
 }
 body {
     background-color: lightgray;
-    height: 100%;
+    height: 200%;
     margin: 0;
+    display: flex;
+    flex-direction: column;
 }
 .container {
     margin-top: 50px;
@@ -21,7 +23,6 @@ hr.custom {
 /* Footer stays at the bottom */
 .custom-footer {
     background-color: #00d1b2;
-    position: absolute;
     height: 6rem;
     bottom: 0;
     width: 100%;
