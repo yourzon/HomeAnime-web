@@ -30,7 +30,7 @@ STATIC_IMAGE_MIME = 'image/webp'
 #- refactor with sql class
 #- Convert code to production
 
-#TODO
+#TODO migrate to this remove sql_command function
 db = MariaDBConnection(mysql)
 
 def sql_command(query,params=None,fetch_all=True):
@@ -255,28 +255,38 @@ def proxy_image(manga_id):
             mimetype=STATIC_IMAGE_MIME
         )
 
-@app.route('/',methods=['POST'])
-def delete_manga():
+@app.route('/edit',methods=['GET','POST'])
+def edit_sql():
     manga_id = request.form.get('manga_id', '').strip()  # Get manga ID from the form
+    action = request.form.get('action') # Identify which action is being requested
+        
+    if action == "delete":
     
-    if request.method == 'POST' and 'confirm' in request.form:  # Step 2: User confirmed deletion
+        if request.method == 'POST' and 'confirm' in request.form:  # Step 2: User confirmed deletion
         # Delete the manga from DB
-        sql_command("DELETE FROM manga WHERE manga_id = %s", (manga_id,), False)
-        flash("Manga deleted successfully!", "success")
-        session.pop('pending_delete', None)  # Clear the pending delete session data
-        return redirect(url_for('delete_manga'))  # Redirect to clear the form data and flash message
+            sql_command("DELETE FROM manga WHERE manga_id = %s", (manga_id,), False)
+            flash("Manga deleted successfully!", "success")
+            session.pop('pending_delete', None)  # Clear the pending delete session data
+            return redirect(url_for('edit_sql'))  # Redirect to clear the form data and flash message
     
-    # Step 1: Fetch manga details and ask for confirmation
-    columns, row = sql_command("SELECT * FROM manga WHERE manga_id = %s", (manga_id,), False)
-    if row:
-        MangaRow = namedtuple("MangaRow", columns)
-        manga = MangaRow(*row)
-        session['pending_delete'] = manga_id  # Store manga ID for confirmation
-        flash(f"Are you sure you want to delete: {manga.manga_id}, {manga.title}, {manga.eng_name}?", "warning")
+        # Step 1: Fetch manga details and ask for confirmation
+        columns, row = sql_command("SELECT * FROM manga WHERE manga_id = %s", (manga_id,), False)
+        if row:
+            MangaRow = namedtuple("MangaRow", columns)
+            manga = MangaRow(*row)
+            session['pending_delete'] = manga_id  # Store manga ID for confirmation
+            flash(f"Are you sure you want to delete: {manga.manga_id}, {manga.title}, {manga.eng_name}?", "warning")
+        else:
+            flash("Manga not found!", "danger")
+    
+    elif action == "external":
+        #Make manga sent external so no follow
+        sql_command("Update manga set is_external = %s WHERE manga_id = %s ",(True,manga_id,), False)
+    
     else:
-        flash("Manga not found!", "danger")
+        flash("Invalid action!", "danger")
 
-    return render_template("index.html")  # Stay on the same page
+    return render_template("edit.html")  # Stay on the same page
 
 #TODO
 @app.route('/statistiques',methods=['GET'])
