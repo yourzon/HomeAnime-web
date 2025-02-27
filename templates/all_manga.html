@@ -44,7 +44,7 @@
                     {% for manga in manga_list %}
                     <!--<tr onclick="redirectToDetails('{{ manga.manga_id }}')">-->
                         {% for key, value in manga._asdict().items() %}
-                            {% if key != 'eng_name'  %}
+                            {% if key != 'eng_name' %}
                             <td
                                 {% if key == 'manga_id' or key == 'title' %}
                                   class="clickable" 

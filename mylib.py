@@ -25,7 +25,18 @@ class MariaDBConnection:
             return result
         except Exception as e:
             return None
-
+    def fetch_one_column(self, query, params=None):
+        """Fetch one rows from a query result and retrun row + columns."""
+        try:
+            cur = self.mysql.connection.cursor()
+            cur.execute(query, params or ())
+            result = cur.fetchone()
+            columns = [col[0] for col in cur.description]
+            cur.close()
+            return result, columns
+        except Exception as e:
+            return None 
+    
     def fetch_all(self, query, params=None):
         """Fetch all rows from a query result."""
         try:
@@ -36,25 +47,51 @@ class MariaDBConnection:
             return result
         except Exception as e:
             return None
-
-    def execute_query(self, query, params=None, commit=False):
-        """
-        Execute INSERT, UPDATE, DELETE queries.
-
-        :param query: SQL query string
-        :param params: Tuple of parameters
-        :param commit: Whether to commit changes (for INSERT, UPDATE, DELETE)
-        :return: Affected rows count or last inserted ID
-        """
+        
+    def fetch_all_column(self, query, params=None):
+        """Fetch all rows from a query result and retrun row + columns."""
         try:
             cur = self.mysql.connection.cursor()
             cur.execute(query, params or ())
-            if commit:
-                self.mysql.connection.commit()
-                result = cur.lastrowid if query.strip().upper().startswith("INSERT") else cur.rowcount
-            else:
-                result = None
+            result = cur.fetchall()
+            columns = [col[0] for col in cur.description]
             cur.close()
-            return result
+            return result, columns
+        except Exception as e:
+            return None 
+        
+    def insert(self, query, params=None):
+        """Execute an INSERT query."""
+        try:
+            cur = self.mysql.connection.cursor()
+            cur.execute(query, params or ())
+            self.mysql.connection.commit()
+            last_inserted_id = cur.lastrowid
+            cur.close()
+            return last_inserted_id
+        except Exception as e:
+            return None
+
+    def update(self, query, params=None):
+        """Execute an UPDATE query."""
+        try:
+            cur = self.mysql.connection.cursor()
+            cur.execute(query, params or ())
+            self.mysql.connection.commit()
+            affected_rows = cur.rowcount
+            cur.close()
+            return affected_rows
+        except Exception as e:
+            return None
+
+    def delete(self, query, params=None):
+        """Execute a DELETE query."""
+        try:
+            cur = self.mysql.connection.cursor()
+            cur.execute(query, params or ())
+            self.mysql.connection.commit()
+            affected_rows = cur.rowcount
+            cur.close()
+            return affected_rows
         except Exception as e:
             return None

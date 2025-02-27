@@ -3,25 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Main SQL Viewer</title>
+    <title>Edit SQL for manga</title>
     <!-- Link to Bulma CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='bulma/css/bulma.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='custom-css/index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='custom-css/base.css') }}">
 </head>
 <body>
+    
        <!-- Header -->
     <section class="hero is-primary">
         <div class="hero-body">
             <h1 class="title is-size-1">Edit SQL for manga</h1>
         </div>
     </section>
+    <!-- Back Button -->
+    <button class="button is-link is-outlined back-button" onclick="window.history.back();">
+        <-- Back to previous page
+    </button>
+    <br>
     <div class="container">
          <!-- Delete Manga Button -->
          <h1 class="title is-3">Delete Manga</h1>
          <form method="POST" action="/edit">
             <div class="field is-horizontal">
                 <div class="control is-expanded">
-                    <input type="text" id="manga_id" name="manga_id" class="input" required placeholder="Enter manga ID"
+                    <input type="text" id="manga_id" name="manga_id_delete" class="input" required placeholder="Enter manga ID"
                            style="width: 300px;" value="{{ request.form['manga_id'] if 'manga_id' in request.form else '' }}">
                 </div>
                 <!-- Buttons beside the input field -->
@@ -57,11 +63,11 @@
          <form method="POST" action="/edit">
             <div class="field is-horizontal">
                 <div class="control is-expanded">
-                    <input type="text" id="manga_id" name="manga_id" class="input" required placeholder="Enter manga ID" style="width: 300px;" >
+                    <input type="text" id="manga_id" name="manga_id_external" class="input" required placeholder="Enter manga ID" style="width: 300px;" >
                 </div>
                 <!-- Buttons beside the input field -->
                 <div class="control ml-2">
-                    <button type="submit" name="action" value="exernal" class="button is-info">Submit</button>
+                    <button type="submit" name="action" value="external" class="button is-info">Submit</button>
                 </div>
             </div>
         </form>
@@ -78,6 +84,6 @@
 <script>
     function clearInputAndRedirect() {
         document.getElementById("manga_id").value = ""; // Clear the input field
-        window.location.href = "/"; // Redirect to homepage
+        window.location.href = "/edit"; // Redirect to homepage
     }
 </script>

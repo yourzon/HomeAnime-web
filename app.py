@@ -6,6 +6,7 @@ from io import BytesIO
 import os
 from config import TestingConfig
 from mylib import *
+import math
 
 app = Flask(__name__)
 
@@ -19,8 +20,8 @@ STATIC_IMAGE_MIME = 'image/webp'
 #- Cleanup backend python (chatgpt) - DONE
 #- make SQL connexion using os variable (app.config) - DONE
 #- make SQL command more streamline - DONE
+#- redo script using new name sql - DONE
 
-#- redo script using new name sql - 
 #- add if up to date in manga details and search - 
 #- add new entry in sql and maybe add tags? - LATER
 #- add more comment to js and python code
@@ -30,11 +31,12 @@ STATIC_IMAGE_MIME = 'image/webp'
 #- refactor with sql class
 #- Convert code to production
 
-#TODO migrate to this remove sql_command function
+# Initiliase MariaDB class
 db = MariaDBConnection(mysql)
 
-def sql_command(query,params=None,fetch_all=True):
-    """
+
+""" def sql_command(query,params=None,fetch_all=True):
+
     Executes any SQL command and returns the result.
 
     Args:
@@ -44,7 +46,7 @@ def sql_command(query,params=None,fetch_all=True):
 
     Returns:
         tuple: For SELECT queries, returns a tuple (columns, result).
-    """
+    
     try:
         with mysql.connection.cursor() as cur:
             # Execute the query with parameters if provided
@@ -67,9 +69,11 @@ def sql_command(query,params=None,fetch_all=True):
         # Log error message for better debugging (you can use a logger here)
         print(f"SQL Command Error: {e}")
         return None
+ """
 
 @app.route('/',methods=['GET'])
 def index():
+
     session.clear()
     return render_template('index.html')
 
@@ -107,7 +111,8 @@ def manga_handler(manga_id=None):
         # Handle search by manga name
         manga_name = request.form.get('manga_name', '').strip()  # Sanitize input
 
-        columns, row = sql_command("SELECT * FROM manga WHERE title LIKE %s", ('%' + manga_name + '%',), False)
+        row,columns  = db.fetch_one_column("SELECT * FROM manga WHERE title LIKE %s", ('%' + manga_name + '%',))
+        #columns, row = sql_command("SELECT * FROM manga WHERE title LIKE %s", ('%' + manga_name + '%',), False)
 
         if not row:
             # Store error in session and redirect to index
@@ -119,7 +124,8 @@ def manga_handler(manga_id=None):
         if not manga_id:
             return "Manga ID is required.", 400
 
-        columns, row = sql_command("SELECT * FROM manga WHERE manga_id = %s", (manga_id,), False)
+        row,columns = db.fetch_one_column("SELECT * FROM manga WHERE manga_id = %s", (manga_id,))
+        #columns, row = sql_command("SELECT * FROM manga WHERE manga_id = %s", (manga_id,), False)
 
         if not row:
             return render_template('404.html', message=f'Manga with ID {manga_id} not found.'), 404
@@ -129,13 +135,14 @@ def manga_handler(manga_id=None):
     manga = MangaRow(*row)
 
     # Fetch tags associated with the manga
-    tags = sql_command(
-        "SELECT t.Name FROM tags t JOIN manga_tags mt ON t.tag_id = mt.tag_id WHERE mt.manga_id = %s;",
-        (manga.manga_id,)
-    )
+    tags = db.fetch_all("SELECT t.Name FROM tags t JOIN manga_tags mt ON t.tag_id = mt.tag_id WHERE mt.manga_id = %s;",(manga.manga_id,))
+    #tags = sql_command(
+    #    "SELECT t.Name FROM tags t JOIN manga_tags mt ON t.tag_id = mt.tag_id WHERE mt.manga_id = %s;",
+    #    (manga.manga_id,)
+    #)
 
     # Convert tuples of tags to a string
-    names = [tag[0] for tag in tags[1]]
+    names = [tag[0] for tag in tags]
     genres = ", ".join(names)
 
     # Render the manga page
@@ -159,27 +166,33 @@ def show_all_manga():
         flask.render_template: The rendered HTML template displaying all manga records
         with their associated tags.
     """
-    columns,rows = sql_command("SELECT * FROM manga")
-    all_manga = []
+    rows,columns = db.fetch_all_column("SELECT * FROM manga")
     
-    for row in rows:
-        # Fetch tags associated with the manga_id that is in row[0]
-        tags = sql_command(
-            "SELECT t.Name FROM tags t JOIN manga_tags mt ON t.tag_id = mt.tag_id WHERE mt.manga_id = %s;",
-            (row[0],)
+    # Remove 'eng_name' and 'is_external' from columns
+    excluded_columns = {'eng_name', 'is_external'}
+    filtered_columns = [col for col in columns if col not in excluded_columns]
+    
+    # Get column indexes that we need (excluding 'eng_name' and 'is_external')
+    column_indexes = [i for i, col in enumerate(columns) if col not in excluded_columns]
+    
+    # Define namedtuple AFTER filtering out unwanted columns
+    MangaWithTags = namedtuple("MangaWithTags", filtered_columns + ["tags"])
+    
+    # Create the manga list using correct column mapping
+    # List comprehensions exemple
+    all_manga = [
+        MangaWithTags(
+            **{col: row[i] for col, i in zip(filtered_columns, column_indexes)},  # Map only the correct indices
+            tags=", ".join([tag[0] for tag in db.fetch_all(
+                "SELECT t.Name FROM tags t JOIN manga_tags mt ON t.tag_id = mt.tag_id WHERE mt.manga_id = %s;", 
+                (row[0],)
+            )])
         )
-        # Extract tags from the result
-        manga_tags = [tag[0] for tag in tags[1]]
-        genres = ", ".join(manga_tags)
-        
-        # Combine manga fields and tags into a new namedtuple
-        MangaWithTags = namedtuple("MangaWithTags", tuple(columns) + ("tags",))  # Add "tags" to the fields
-        manga_with_tags = MangaWithTags(*row, genres)  # Create new namedtuple with tags
-        
-        all_manga.append(manga_with_tags)
-        
+        for row in rows
+    ]
+
     # Render a template to show all manga
-    return render_template('all_manga.html', manga_list=all_manga, columns=columns)
+    return render_template('all_manga.html', manga_list=all_manga)
 
 @app.route('/proxy-image/<manga_id>')
 def proxy_image(manga_id):
@@ -257,47 +270,100 @@ def proxy_image(manga_id):
 
 @app.route('/edit',methods=['GET','POST'])
 def edit_sql():
-    manga_id = request.form.get('manga_id', '').strip()  # Get manga ID from the form
     action = request.form.get('action') # Identify which action is being requested
         
     if action == "delete":
-    
+        manga_id_delete = request.form.get('manga_id_delete', '').strip()  # Get manga ID from the form
         if request.method == 'POST' and 'confirm' in request.form:  # Step 2: User confirmed deletion
         # Delete the manga from DB
-            sql_command("DELETE FROM manga WHERE manga_id = %s", (manga_id,), False)
-            flash("Manga deleted successfully!", "success")
+            # Check if manga has tags in manga_tags table
+            row,columns = db.fetch_all("SELECT * FROM manga_tags WHERE manga_id = %s", (manga_id_delete,))
+            
+            if row: # If manga has tags, delete the entries first
+                db.delete("DELETE FROM manga_tags WHERE manga_id = %s", (manga_id_delete,))
+                
+            # Delete manga from the manga table
+            result = db.delete("DELETE FROM manga WHERE manga_id = %s", (manga_id_delete,))
+            #sql_command("DELETE FROM manga WHERE manga_id = %s", (manga_id,), False)
+            
+            if result > 0:  # If result is the number of rows deleted
+                flash("Manga deleted successfully!", "success")
+            else:
+                flash("Manga deletion failed. No rows affected.", "danger")
+                
             session.pop('pending_delete', None)  # Clear the pending delete session data
             return redirect(url_for('edit_sql'))  # Redirect to clear the form data and flash message
     
         # Step 1: Fetch manga details and ask for confirmation
-        columns, row = sql_command("SELECT * FROM manga WHERE manga_id = %s", (manga_id,), False)
+        row,columns = db.fetch_one_column("SELECT * FROM manga WHERE manga_id = %s", (manga_id_delete,))
+        #columns, row = sql_command("SELECT * FROM manga WHERE manga_id = %s", (manga_id,), False)
         if row:
             MangaRow = namedtuple("MangaRow", columns)
             manga = MangaRow(*row)
-            session['pending_delete'] = manga_id  # Store manga ID for confirmation
+            session['pending_delete'] = manga_id_delete  # Store manga ID for confirmation
             flash(f"Are you sure you want to delete: {manga.manga_id}, {manga.title}, {manga.eng_name}?", "warning")
         else:
             flash("Manga not found!", "danger")
     
     elif action == "external":
+        manga_id_external = request.form.get('manga_id_external', '').strip()  # Get manga ID from the form
         #Make manga sent external so no follow
-        sql_command("Update manga set is_external = %s WHERE manga_id = %s ",(True,manga_id,), False)
+        db.update("UPDATE manga SET is_external = %s WHERE manga_id = %s ",(True,manga_id_external))
+        #sql_command("Update manga set is_external = %s WHERE manga_id = %s ",(True,manga_id,), False)
     
     else:
-        flash("Invalid action!", "danger")
+        #flash("Invalid action!", "danger")
+        print()
 
     return render_template("edit.html")  # Stay on the same page
 
 #TODO
 @app.route('/statistiques',methods=['GET'])
 def get_stats():
-    #TODO
-    #-quantity of manga by read stat
-    #-number of manga
-    #-average of chapter read by manag
-    #-the number of is_lastest 
-    #-the number of manga by year of release(button toggle)
-    print("")
+    #TODO add more ?
+    #TODO remake css page
+        
+    # The quantity of manga by status_read
+    status_read = db.fetch_all("""
+        SELECT status_read, COUNT(*) as quantity
+        FROM manga 
+        GROUP BY status_read 
+        ORDER BY quantity DESC
+        """)
+    # The quantity of manga by year of release
+    year_release = db.fetch_all("""
+        SELECT year_release AS release_year, COUNT(*) AS quantity
+        FROM manga
+        GROUP BY year_release
+        ORDER BY year_release DESC;
+    """)
+    # The quantity of tags
+    tags_stats = db.fetch_all("""
+        SELECT t.name, COUNT(mt.tag_id) AS tag_count
+        FROM tags t
+        JOIN manga_tags mt ON t.tag_id = mt.tag_id
+        GROUP BY t.name
+        ORDER BY tag_count DESC;
+    """)
+    
+    # Fetch values from the database
+    single_stats = {
+        # Quantity of manga
+        "number_manga" :  db.fetch_one("SELECT COUNT(*) FROM manga")[0],
+        # Average of chapter read
+        "average_chapter" : math.ceil(db.fetch_one("SELECT AVG(chapter_read) FROM manga")[0] or 0),
+        # The quantity of active is_latest 
+        "is_latest" : db.fetch_one("SELECT COUNT(*) FROM manga WHERE is_latest = 1")[0]
+    }
+   
+    print(single_stats)
+    
+    return render_template('statistiques.html',
+                           stats = single_stats, 
+                           status_read = status_read, 
+                           year_release = year_release,
+                           tags_stats = tags_stats
+                           )
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -6,7 +6,7 @@
     <title>Main SQL Viewer</title>
     <!-- Link to Bulma CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='bulma/css/bulma.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='custom-css/index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='custom-css/base.css') }}">
 </head>
 <body>
        <!-- Header -->
@@ -48,10 +48,10 @@
         <hr class="custom">
         <br>
          <!-- Delete Manga Button -->
-         <h1 class="title is-3">Edit SQl entries</h1>
+         <h1 class="title is-3">Edit SQL entries</h1>
          <form method="POST" action="/edit">
             <div class="control">
-                <button type="submit" class="button is-warning">Edit SQl</button>
+                <button type="submit" class="button is-warning">Edit SQL</button>
             </div>
         </form>
         <br>
@@ -59,7 +59,7 @@
          <br>
         <!-- Statistiques Button -->
         <h1 class="title is-3">Statistiques</h1>
-        <form method="POST" action="/Statistiques">
+        <form method="GET" action="/statistiques">
             <div class="control">
                 <button type="submit" class="button is-info">Statistiques</button>
             </div>
