@@ -20,15 +20,12 @@ STATIC_IMAGE_MIME = 'image/webp'
 #- Cleanup backend python (chatgpt) - DONE
 #- make SQL connexion using os variable (app.config) - DONE
 #- make SQL command more streamline - DONE
-#- redo script using new name sql - DONE
+#- refactor with sql class - DONE
+#- add statistique page - DONE
+#- add if up to date in manga details and search - DONE
 
-#- add if up to date in manga details and search - 
-#- add new entry in sql and maybe add tags? - LATER
+#- refactor with manga class like the scripts (maybe?)
 #- add more comment to js and python code
-#- add statistique page
-#- add remove entry code
-#- refactor with manga class like the scripts
-#- refactor with sql class
 #- Convert code to production
 
 # Initiliase MariaDB class
@@ -149,7 +146,6 @@ def manga_handler(manga_id=None):
         manga_name = request.form.get('manga_name', '').strip()  # Sanitize input
 
         row,columns  = db.fetch_one_column("SELECT * FROM manga WHERE title LIKE %s", ('%' + manga_name + '%',))
-        #columns, row = sql_command("SELECT * FROM manga WHERE title LIKE %s", ('%' + manga_name + '%',), False)
 
         if not row:
             # Store error in session and redirect to index
@@ -162,7 +158,6 @@ def manga_handler(manga_id=None):
             return "Manga ID is required.", 400
 
         row,columns = db.fetch_one_column("SELECT * FROM manga WHERE manga_id = %s", (manga_id,))
-        #columns, row = sql_command("SELECT * FROM manga WHERE manga_id = %s", (manga_id,), False)
 
         if not row:
             return render_template('404.html', message=f'Manga with ID {manga_id} not found.'), 404
@@ -173,10 +168,6 @@ def manga_handler(manga_id=None):
 
     # Fetch tags associated with the manga
     tags = db.fetch_all("SELECT t.Name FROM tags t JOIN manga_tags mt ON t.tag_id = mt.tag_id WHERE mt.manga_id = %s;",(manga.manga_id,))
-    #tags = sql_command(
-    #    "SELECT t.Name FROM tags t JOIN manga_tags mt ON t.tag_id = mt.tag_id WHERE mt.manga_id = %s;",
-    #    (manga.manga_id,)
-    #)
 
     # Convert tuples of tags to a string
     names = [tag[0] for tag in tags]
