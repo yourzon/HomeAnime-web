@@ -82,7 +82,10 @@ class MariaDBConnection:
             cur.close()
             return affected_rows
         except Exception as e:
-            return None
+            if e.args[0] == 1265:
+                return "Error: data types, exceeding column length, or violating constraints like ENUM or NOT NULL"
+            else:
+                return f"Error:{e}"
 
     def delete(self, query, params=None):
         """Execute a DELETE query."""

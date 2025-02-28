@@ -10,7 +10,7 @@
   </head>
   <body>
     <!-- Header -->
-    <section class="hero is-primary">
+    <section class="hero is-info">
       <div class="hero-body">
         <h1 class="title is-size-1">Statistiques Viewer</h1>
       </div>
@@ -21,22 +21,16 @@
     <h2 class="subtitle is-3 is-underlined">General stats:</h2> <!-- Table Title -->
     <!-- Directly display the statistics below the heading -->
     <div>
-      <p>
-        <strong>Total Manga Count:</strong> {{ stats.number_manga }}
-      </p>
-      <p>
-        <strong>Average Chapters Read:</strong> {{ stats.average_chapter }}
-      </p>
-      <p>
-        <strong>Number of not up to date Manga:</strong> {{ stats.is_latest }}
-      </p>
+      <p><strong>Total Manga Count:</strong> {{ stats.number_manga }}</p>
+      <p><strong>Average Chapters Read:</strong> {{ stats.average_chapter }}</p>
+      <p><strong>Number of manga not up to date:</strong> {{ stats.is_latest }}</p>
     </div>
     <br />
     <!-- Table Side by Side (or Adjust Based on Content) -->
     <div class="columns">
-      <div class="column is-half">
-        <h2 class="subtitle is-3 is-underlined">Quantity by read status</h2> <!-- Table Title -->
-        <table id="status-read" class="table is-bordered is-striped is-hoverable">
+      <div class="column ">
+        <h2 class="subtitle is-4 is-underlined">Quantity by read status</h2> <!-- Table Title -->
+        <table id="status-read" class="table is-bordered is-striped is-narrow">
           <thead>
             <tr>
               <th>Read status</th>
@@ -48,9 +42,25 @@
           </tbody>
         </table>
       </div>
-      <div class="column is-half">
-        <h2 class="subtitle is-3 is-underlined">Quantity by tags name</h2> <!-- Table Title -->
-        <table id="tags-table" class="table is-bordered is-striped is-hoverable">
+      <!-- Second Table -->
+      <div class="column">
+      <h2 class="subtitle is-4 is-underlined">Quantity by Year</h2> <!-- Table Title -->
+      <table id="year-table" class="table is-bordered is-striped is-narrow">
+        <thead>
+          <tr>
+            <th>Year</th>
+            <th>Quantity</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Dynamic rows will be injected here by JavaScript -->
+        </tbody>
+      </table>
+      </div>
+      <!-- Third Table -->
+      <div class="column">
+        <h2 class="subtitle is-4 is-underlined">Quantity by tags</h2> <!-- Table Title -->
+        <table id="tags-table" class="table is-bordered is-striped is-narrow">
           <thead>
             <tr>
               <th>Tags names</th>
@@ -62,35 +72,37 @@
           </tbody>
         </table>
       </div>
+      <!-- Fourth Table -->
+      <div class="column">
+        <h2 class="subtitle is-4 is-underlined">Quantity by official status</h2> <!-- Table Title -->
+        <table id="status-offi" class="table is-bordered is-striped is-narrow">
+          <thead>
+            <tr>
+              <th>Official Status</th>
+              <th>Quantity</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Dynamic rows will be injected here by JavaScript -->
+          </tbody>
+        </table>
+      </div>
     </div>
+    
+    
 
-    <!-- Second under Table -->
-    <div class="column">
-      <h2 class="subtitle is-3 is-underlined">Quantity by Year</h2> <!-- Table Title -->
-      <table id="year-table" class="table is-bordered is-striped is-hoverable">
-        <thead>
-          <tr>
-            <th>Year</th>
-            <th>Quantity</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Dynamic rows will be injected here by JavaScript -->
-        </tbody>
-      </table>
-    </div>
+   
     <!-- Data embedded as hidden JSON -->
-    <script type="application/json" id="status-read-data">
-      {{ status_read | tojson}}
-    </script>
-    <script type="application/json" id="year-release-data">
-      {{ year_release | tojson }}
-    </script>
-    <script type="application/json" id="tags-stats-data">
-      {{ tags_stats | tojson }}
-    </script>
+    <script type="application/json" id="status-read-data">{{ status_read | tojson}}</script>
+    <script type="application/json" id="year-release-data">{{ year_release | tojson }}</script>
+    <script type="application/json" id="tags-stats-data">{{ tags_stats | tojson }}</script>
+    <script type="application/json" id="status-offi-data">{{ status_offi | tojson }}</script>
 
     <!-- External JS File -->
     <script src="{{ url_for('static', filename='js/statistiques.js') }}"></script>
+    <!-- Footer -->
+    <footer class="custom-footer">
+      <p>&copy; 2024 Manga Website. All rights reserved.</p>
+    </footer>
   </body>
 </html>

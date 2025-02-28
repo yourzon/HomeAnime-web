@@ -9,29 +9,49 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='custom-css/base.css') }}">
 </head>
 <body>
-    
-       <!-- Header -->
-    <section class="hero is-primary">
+    <!-- Header -->
+    <section class="hero is-info">
         <div class="hero-body">
             <h1 class="title is-size-1">Edit SQL for manga</h1>
         </div>
     </section>
-    <!-- Back Button -->
-    <button class="button is-link is-outlined back-button" onclick="window.history.back();">
-        <-- Back to previous page
-    </button>
-    <br>
+
+    {% if not session.get('valid_entry') %}
+        <!-- Back Button -->
+        <button class="button is-link is-outlined back-button" onclick="window.location.href='/'">
+            <-- Back to previous page
+        </button>
+        <br>
+    {% endif %}
+
     <div class="container">
-         <!-- Delete Manga Button -->
-         <h1 class="title is-3">Delete Manga</h1>
-         <form method="POST" action="/edit">
+        {% if not session.get('valid_entry') %}
+        <!-- Form only visible when the manga ID is not valid -->
+        <form method="POST" action="{{ url_for('edit_sql') }}">
             <div class="field is-horizontal">
+                <h2 class="title is-3 mr-3">Manga ID:</h2>
                 <div class="control is-expanded">
-                    <input type="text" id="manga_id" name="manga_id_delete" class="input" required placeholder="Enter manga ID"
-                           style="width: 300px;" value="{{ request.form['manga_id'] if 'manga_id' in request.form else '' }}">
+                    <input type="text" id="manga_id" name="manga_id" class="input {% if session.get('valid_entry') is not none and not session.get('valid_entry') %}is-danger{% endif %}" 
+                        required placeholder="Enter manga ID" style="width: 300px;" 
+                        value="{{ session.get('manga_id', '') }}">
+                    <!-- Display error message only if there's an error -->
+                    {% if session.get('error') %}
+                        <p class="help is-danger">{{ session.get('error') }}</p>
+                    {% endif %}
                 </div>
-                <!-- Buttons beside the input field -->
+
+                <!-- Submit button -->
                 <div class="control is-grouped" style="margin-left: 10px;">
+                    <button class="button is-primary equal-height" type="submit" name="action" value="info">Submit</button>
+                </div>  
+            </div>
+        </form>
+        {% else %}
+        <div class="container">
+            <div class="control">
+                <!-- Delete this entry button -->
+                <h2 class="title is-3 mr-3">Delete this manga </h2>
+                <form method="POST" action="/edit">
                     <button type="submit" class="button is-danger" name="action" value="delete">
                         {% if session['pending_delete'] %}
                             Confirm Delete
@@ -41,49 +61,75 @@
                             Delete
                         {% endif %}
                     </button>
-        
-                    <!-- Same form action for the cancel button -->
-                    <button type="button" class="button is-warning" onclick="clearInputAndRedirect()">Cancel</button>
-                </div>
-            </div>
-        </form>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <p style="color: {% if category == 'warning' %}yellow{% endif %};">
-                        {{ message }}
-                    </p>
+                    {% for message in get_flashed_messages(category_filter=["delete"]) %}
+                            <p>{{ message }}</p>   
+                    {% endfor %}
+                </form>
+            <br>
+            <br>
+                <!-- Edit this entry field -->
+                <h2 class="title is-3">Edit this manga </h2>
+                {% for message in get_flashed_messages(category_filter=["update"]) %}
+                    {% if 'Error' in message  %}
+                        <p class="has-text-danger">{{message}}</p>
+                    {% else  %}
+                        <p class="has-text-primary">{{ message }}</p>
+                    {% endif %} 
                 {% endfor %}
-            {% endif %}
-        {% endwith %}
-         <br>
-         <hr class="custom">
-         <br>
-         <h1 class="title is-3">Make Manga External</h1>
-         <form method="POST" action="/edit">
-            <div class="field is-horizontal">
-                <div class="control is-expanded">
-                    <input type="text" id="manga_id" name="manga_id_external" class="input" required placeholder="Enter manga ID" style="width: 300px;" >
+                <form method="POST" action="/edit">
+                    <div class="field">
+                        <label class="label">Choose an Option:</label>
+                        <div class="control">
+                            <div class="select">
+                                <select id="dropdown" name="dropdown">
+                                    <option value="">Select an option</option>
+                                    {% for option in options %}
+                                        <option value="{{ option.value }}">{{ option.label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+    
+                    <!-- Input field that will appear based on dropdown selection -->
+                    <div class="field" id="inputFields" style="display: none;">
+                        <label class="label">Input the new information for the selected option:</label>
+                        <div class="control">
+                            <input type="text" id="inputField" name="inputField" class="input" placeholder="Enter info here" style="width: 400px;">
+                        </div>
+                        <!-- Submit button -->
+                        <br>
+                        <div class="control">
+                            <button class="button is-primary" type="submit" name="action" value="update">Submit</button>
+                        </div>
+                    </div>
                 </div>
-                <!-- Buttons beside the input field -->
-                <div class="control ml-2">
-                    <button type="submit" name="action" value="external" class="button is-info">Submit</button>
+
+            <br>
+            <br>
+            <br>
+            <br>
+            <!-- Cancel button positioned at the bottom-right using Bulma -->
+            <div class="columns is-centered">
+                <div class="column is-half">
+                    <div class="field is-grouped is-grouped-right">
+                        <a class="button is-warning" href="{{ url_for('edit_sql') }}?action=cancel">Cancel</a>
+                    </div>
                 </div>
             </div>
-        </form>
-        <br>
-        <hr class="custom">
-        <br>
+        </div>
+        {% endif %}
+    </div>
+    
+
+
+
     <!-- Footer -->
     <footer class="custom-footer">
-            <p>&copy; 2024 Manga Website. All rights reserved.</p>
+        <p>&copy; 2024 Manga Website. All rights reserved.</p>
     </footer>
+    <!-- Link to external JavaScript file -->
+    <script src="{{ url_for('static', filename='js/edit.js') }}"></script>
 </body>
 </html>
 
-<script>
-    function clearInputAndRedirect() {
-        document.getElementById("manga_id").value = ""; // Clear the input field
-        window.location.href = "/edit"; // Redirect to homepage
-    }
-</script>

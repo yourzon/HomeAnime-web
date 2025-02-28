@@ -5,7 +5,7 @@ html{
     flex-direction: column;
 }
 body {
-    background-color: lightgray;
+    background-color: #F8F9FA;
     height: 200%;
     margin: 0;
     display: flex;
@@ -20,14 +20,17 @@ hr.custom {
     width: 250px; /* Set a fixed width */
     height: 40px; /* Set a fixed height */
 }
+strong, h2 {
+    color: #333333;
+}
 .container {
     margin-top: 50px;
-    min-height: 600px;
+    min-height: 450px;
 }
 
 /* Footer stays at the bottom */
 .custom-footer {
-    background-color: #00d1b2;
+    background-color: #66d1ff;
     height: 6rem;
     bottom: 0;
     width: 100%;
@@ -36,3 +39,4 @@ hr.custom {
     align-items: center;
     font-size: 1.2rem;
 }
+

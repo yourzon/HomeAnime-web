@@ -1,26 +1,3 @@
-html{
-    height: 100%;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-}
-body {
-    background-color: lightgray;
-    height: 100%;
-    margin: 0;
-}
-/* Footer stays at the bottom */
-.custom-footer {
-    background-color: #00d1b2;
-    position: absolute;
-    height: 6rem;
-    bottom: 0;
-    width: 100%;
-    display: flex;
-    justify-content: center; 
-    align-items: center;
-    font-size: 1.2rem;
-}
 
 /* Make the main section grow to fill the remaining space */
 .section {

@@ -34,42 +34,79 @@ STATIC_IMAGE_MIME = 'image/webp'
 # Initiliase MariaDB class
 db = MariaDBConnection(mysql)
 
-
-""" def sql_command(query,params=None,fetch_all=True):
-
-    Executes any SQL command and returns the result.
+@app.route('/proxy-image/<manga_id>')
+def proxy_image(manga_id):
+    """
+    Fetches and serves the manga cover image from MangaDex, or a static fallback image
+    if the cover image is not available, the MangaDex API call fails, or if any error occurs.
+    
+    This function first attempts to retrieve the manga cover image from the MangaDex API.
+    If the cover image is not found or if there are any issues (e.g., no internet connection,
+    missing cover art, etc.), it serves a static fallback image.
 
     Args:
-        query (str): The SQL query to execute (SELECT, INSERT, UPDATE, DELETE, etc.)
-        params (tuple, optional): Parameters to be used in the query. Defaults to None.
-        fetch_all (bool, optional): Whether to fetch all rows (for SELECT queries). Defaults to True.
+        manga_id (str): The unique ID of the manga whose cover image is to be fetched.
 
     Returns:
-        tuple: For SELECT queries, returns a tuple (columns, result).
-    
+        Flask Response: The cover image if found, or a fallback static image if an error occurs.
+        The response will have the appropriate content type (e.g., image/jpeg or image/webp).
+    """
+    # API URL to get the manga cover art
+    url = f"https://api.mangadex.org/manga/{manga_id}?includes[]=cover_art"
+
     try:
-        with mysql.connection.cursor() as cur:
-            # Execute the query with parameters if provided
-            if params:
-                cur.execute(query, params)
-            else:
-                cur.execute(query)
-            
-            # If the query is a SELECT, fetch the results
-            if query.strip().lower().startswith("select"):
-                columns = [col[0] for col in cur.description]  # Column names
-                if fetch_all:
-                    result = cur.fetchall()  # Fetch all rows
-                else:
-                    result = cur.fetchone()  # Fetch only the first row
-                return columns, result
-            
+        # Fetch the data from the MangaDex API
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
+        manga_data = response.json()
+    except requests.exceptions.RequestException:
+        return send_file(
+            os.path.join(app.root_path, STATIC_IMAGE_PATH),  # Static fallback image
+            mimetype=STATIC_IMAGE_MIME
+        )
     
-    except Exception as e:
-        # Log error message for better debugging (you can use a logger here)
-        print(f"SQL Command Error: {e}")
-        return None
- """
+    # Extract the cover relationship
+    relationships = manga_data.get("data", {}).get("relationships", [])
+    cover_relationship = next(
+        (rel for rel in relationships if rel.get("type") == "cover_art"), 
+        None
+    )
+
+    # If no cover art found, return the static fallback
+    if not cover_relationship:
+        return send_file(
+            os.path.join(app.root_path, STATIC_IMAGE_PATH),  # Static fallback image
+            mimetype=STATIC_IMAGE_MIME
+        )
+
+    cover_filename = cover_relationship.get("attributes", {}).get("fileName")
+    
+    if not cover_filename:
+        return send_file(
+            os.path.join(app.root_path, STATIC_IMAGE_PATH),  # Static fallback image
+            mimetype=STATIC_IMAGE_MIME
+        )
+
+    # Construct the URL for the cover image
+    base_url = "https://uploads.mangadex.org/covers"
+    full_image_url = f"{base_url}/{manga_id}/{cover_filename}.256.jpg"
+
+    try:
+        # Fetch the image from the URL
+        response = requests.get(full_image_url, stream=True)
+        response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
+
+        # Serve the image through the proxy
+        return send_file(
+            BytesIO(response.content),
+            mimetype=response.headers.get('Content-Type', 'image/jpeg')  # Default to JPEG if type is not available
+        )
+    except requests.exceptions.RequestException:
+        # If image fetch fails, return the static fallback
+        return send_file(
+            os.path.join(app.root_path, STATIC_IMAGE_PATH),  # Static fallback image
+            mimetype=STATIC_IMAGE_MIME
+        )
 
 @app.route('/',methods=['GET'])
 def index():
@@ -194,133 +231,110 @@ def show_all_manga():
     # Render a template to show all manga
     return render_template('all_manga.html', manga_list=all_manga)
 
-@app.route('/proxy-image/<manga_id>')
-def proxy_image(manga_id):
-    """
-    Fetches and serves the manga cover image from MangaDex, or a static fallback image
-    if the cover image is not available, the MangaDex API call fails, or if any error occurs.
-    
-    This function first attempts to retrieve the manga cover image from the MangaDex API.
-    If the cover image is not found or if there are any issues (e.g., no internet connection,
-    missing cover art, etc.), it serves a static fallback image.
-
-    Args:
-        manga_id (str): The unique ID of the manga whose cover image is to be fetched.
-
-    Returns:
-        Flask Response: The cover image if found, or a fallback static image if an error occurs.
-        The response will have the appropriate content type (e.g., image/jpeg or image/webp).
-    """
-    # API URL to get the manga cover art
-    url = f"https://api.mangadex.org/manga/{manga_id}?includes[]=cover_art"
-
-    try:
-        # Fetch the data from the MangaDex API
-        response = requests.get(url)
-        response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
-        manga_data = response.json()
-    except requests.exceptions.RequestException:
-        return send_file(
-            os.path.join(app.root_path, STATIC_IMAGE_PATH),  # Static fallback image
-            mimetype=STATIC_IMAGE_MIME
-        )
-    
-    # Extract the cover relationship
-    relationships = manga_data.get("data", {}).get("relationships", [])
-    cover_relationship = next(
-        (rel for rel in relationships if rel.get("type") == "cover_art"), 
-        None
-    )
-
-    # If no cover art found, return the static fallback
-    if not cover_relationship:
-        return send_file(
-            os.path.join(app.root_path, STATIC_IMAGE_PATH),  # Static fallback image
-            mimetype=STATIC_IMAGE_MIME
-        )
-
-    cover_filename = cover_relationship.get("attributes", {}).get("fileName")
-    
-    if not cover_filename:
-        return send_file(
-            os.path.join(app.root_path, STATIC_IMAGE_PATH),  # Static fallback image
-            mimetype=STATIC_IMAGE_MIME
-        )
-
-    # Construct the URL for the cover image
-    base_url = "https://uploads.mangadex.org/covers"
-    full_image_url = f"{base_url}/{manga_id}/{cover_filename}.256.jpg"
-
-    try:
-        # Fetch the image from the URL
-        response = requests.get(full_image_url, stream=True)
-        response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
-
-        # Serve the image through the proxy
-        return send_file(
-            BytesIO(response.content),
-            mimetype=response.headers.get('Content-Type', 'image/jpeg')  # Default to JPEG if type is not available
-        )
-    except requests.exceptions.RequestException:
-        # If image fetch fails, return the static fallback
-        return send_file(
-            os.path.join(app.root_path, STATIC_IMAGE_PATH),  # Static fallback image
-            mimetype=STATIC_IMAGE_MIME
-        )
-
 @app.route('/edit',methods=['GET','POST'])
 def edit_sql():
-    action = request.form.get('action') # Identify which action is being requested
-        
-    if action == "delete":
-        manga_id_delete = request.form.get('manga_id_delete', '').strip()  # Get manga ID from the form
-        if request.method == 'POST' and 'confirm' in request.form:  # Step 2: User confirmed deletion
-        # Delete the manga from DB
-            # Check if manga has tags in manga_tags table
-            row,columns = db.fetch_all("SELECT * FROM manga_tags WHERE manga_id = %s", (manga_id_delete,))
-            
-            if row: # If manga has tags, delete the entries first
-                db.delete("DELETE FROM manga_tags WHERE manga_id = %s", (manga_id_delete,))
-                
-            # Delete manga from the manga table
-            result = db.delete("DELETE FROM manga WHERE manga_id = %s", (manga_id_delete,))
-            #sql_command("DELETE FROM manga WHERE manga_id = %s", (manga_id,), False)
-            
-            if result > 0:  # If result is the number of rows deleted
-                flash("Manga deleted successfully!", "success")
-            else:
-                flash("Manga deletion failed. No rows affected.", "danger")
-                
-            session.pop('pending_delete', None)  # Clear the pending delete session data
-            return redirect(url_for('edit_sql'))  # Redirect to clear the form data and flash message
-    
-        # Step 1: Fetch manga details and ask for confirmation
-        row,columns = db.fetch_one_column("SELECT * FROM manga WHERE manga_id = %s", (manga_id_delete,))
-        #columns, row = sql_command("SELECT * FROM manga WHERE manga_id = %s", (manga_id,), False)
-        if row:
-            MangaRow = namedtuple("MangaRow", columns)
-            manga = MangaRow(*row)
-            session['pending_delete'] = manga_id_delete  # Store manga ID for confirmation
-            flash(f"Are you sure you want to delete: {manga.manga_id}, {manga.title}, {manga.eng_name}?", "warning")
-        else:
-            flash("Manga not found!", "danger")
-    
-    elif action == "external":
-        manga_id_external = request.form.get('manga_id_external', '').strip()  # Get manga ID from the form
-        #Make manga sent external so no follow
-        db.update("UPDATE manga SET is_external = %s WHERE manga_id = %s ",(True,manga_id_external))
-        #sql_command("Update manga set is_external = %s WHERE manga_id = %s ",(True,manga_id,), False)
-    
-    else:
-        #flash("Invalid action!", "danger")
-        print()
+    #TODO redo edit page
 
-    return render_template("edit.html")  # Stay on the same page
+    if request.method == 'POST':
+        action = request.form.get('action','')
+        
+        # Delete the manga from DB
+        if action == 'delete':
+            manga_id = session.get('manga_id')
+            
+            if 'confirm' in request.form:  # Step 2: User confirmed deletion
+            
+                # Check if manga has tags in manga_tags table
+                row = db.fetch_all("SELECT * FROM manga_tags WHERE manga_id = %s", (manga_id,))
+                
+                if row: # If manga has tags, delete the entries first
+                    db.delete("DELETE FROM manga_tags WHERE manga_id = %s", (manga_id,))
+                    
+                # Delete manga from the manga table
+                result = db.delete("DELETE FROM manga WHERE manga_id = %s", (manga_id,))
+                
+                if result > 0:  # If result is the number of rows deleted
+                    flash("Manga deleted successfully!", "delete")
+                    session.pop('pending_delete', None)  # Clear the pending delete session data
+                    return redirect(url_for('edit_sql',action='cancel'))
+                else:
+                    flash("Manga deletion failed. No rows affected.", "delete")
+                    return render_template('edit.html')
+            
+            # Step 1: Fetch manga details and ask for confirmation
+            row, columns = db.fetch_one_column("SELECT * FROM manga WHERE manga_id = %s", (manga_id,))
+            
+            if row:
+                MangaRow = namedtuple("MangaRow", columns)
+                manga = MangaRow(*row)
+                session['pending_delete'] = manga_id  # Store manga ID for confirmation
+                flash(f"Are you sure you want to delete: {manga.manga_id}, {manga.title}, {manga.eng_name}?", "warning")
+                return render_template('edit.html')
+                
+        elif action == 'info':
+            manga_id = request.form.get('manga_id', '').strip()
+            valid_entry = db.fetch_one("SELECT 1 FROM manga WHERE manga_id = %s", (manga_id,)) is not None
+
+            # Store the result in session
+            session['valid_entry'] = valid_entry
+            session['manga_id'] = manga_id
+            
+            # If invalid, set error message in session and render template
+            if not valid_entry:
+                session['error'] = "Invalid Manga ID"
+                return render_template('edit.html')
+            
+            # Get colums name for dropdown menu
+            columns_names = db.fetch_all("""
+                            SELECT COLUMN_NAME
+                            FROM INFORMATION_SCHEMA.COLUMNS
+                            WHERE TABLE_NAME ="manga";
+                            """)
+            options = [{'value': col, 'label': col} for col in (col[0] for col in columns_names) if col != "manga_id"]
+            session['options']= options
+            
+            return render_template('edit.html',options=options)
+        
+        elif action == 'update':
+            options = session.get('options')
+            manga_id= session.get('manga_id')
+            # Get dropdown choice 
+            selected_option  = request.form.get('dropdown','')
+            # Get value entered
+            input_field = request.form.get('inputField','')
+            # send it and check if error comme back
+            print(selected_option,input_field)
+            print(f"UPDATE manga SET {selected_option} = %s WHERE manga_id = %s", (input_field, manga_id))
+
+            result = db.update(f"UPDATE manga SET {selected_option} = %s WHERE manga_id = %s", (input_field, manga_id))
+            print(session)
+            print(result)
+            
+            if isinstance(result, str) and 'Error' in result:
+                flash(result, "update")  # Flash the error message
+            else:
+                flash("The last modification was a success!", "update")  # Flash success message
+
+            return render_template('edit.html', options=options)
+                        
+
+        
+       
+    
+    if request.method == 'GET':
+        # Clear session if the cancel button was clicked
+        if request.args.get('action') == 'cancel':
+            session.pop('valid_entry', None)
+            session.pop('manga_id', None)
+            session.pop('error', None)
+            session.pop('success', None)
+
+        return render_template('edit.html')
+
 
 #TODO
 @app.route('/statistiques',methods=['GET'])
 def get_stats():
-    #TODO add more ?
     #TODO remake css page
         
     # The quantity of manga by status_read
@@ -345,6 +359,12 @@ def get_stats():
         GROUP BY t.name
         ORDER BY tag_count DESC;
     """)
+    status_offi = db.fetch_all("""
+        SELECT status_offi, COUNT(*) as quantity
+        FROM manga 
+        GROUP BY status_offi 
+        ORDER BY quantity DESC
+        """)
     
     # Fetch values from the database
     single_stats = {
@@ -355,14 +375,10 @@ def get_stats():
         # The quantity of active is_latest 
         "is_latest" : db.fetch_one("SELECT COUNT(*) FROM manga WHERE is_latest = 1")[0]
     }
-   
-    print(single_stats)
     
-    return render_template('statistiques.html',
-                           stats = single_stats, 
-                           status_read = status_read, 
-                           year_release = year_release,
-                           tags_stats = tags_stats
+    return render_template('statistiques.html',stats = single_stats, 
+                           status_read = status_read, year_release = year_release,
+                           tags_stats = tags_stats, status_offi =  status_offi
                            )
 
 if __name__ == '__main__':

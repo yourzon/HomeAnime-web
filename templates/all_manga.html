@@ -5,22 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>All Manga</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='bulma/css/bulma.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='custom-css/base.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='custom-css/all_manga.css') }}">
     <script src="{{ url_for('static', filename='js/all-manga.js') }}" defer></script>
 </head>
 <body>
     <!-- Header -->
-    <section class="hero is-primary">
+    <section class="hero is-info">
         <div class="hero-body">
             <h1 class="title is-size-1">All Manga</h1>
         </div>
     </section>
-
     <!-- Back Button -->
-    <button class="button is-link is-outlined" onclick="window.history.back();">
-        <-- Back to previous page
-    </button>
-
+    <button class="button is-link is-outlined back-button" onclick="window.history.back();"><-- Back to previous page</button>
+    <br />
     <!-- Manga Table -->
     <section class="section">
             <!-- Search Input -->
@@ -60,5 +58,8 @@
                 </tbody>
             </table>
     </section>
+    <footer class="custom-footer">
+        <p>&copy; 2024 Manga Website. All rights reserved.</p>
+    </footer>
 </body>
 </html>
